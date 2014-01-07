@@ -105,6 +105,4 @@ else
 
 fi
 
-# Credit to David Barshow for excelling google-ing skills
-# as well as not taking the time to understand what this actually does
-trap "kill 0" SIGINT SIGTERM EXIT
+

@@ -9,6 +9,7 @@ AMQP = require('src/amqp')
 { MaxFrameBuffer, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
 describe 'Publisher', () ->
+  this.timeout(15000)
 
   it 'test we can publish a message in confirm mode', (done)->
     amqp = null
@@ -18,11 +19,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", queue, "test message", {confirm:true}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -35,13 +36,13 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         async.forEach [0...100], (i, done)->
           amqp.publish "amq.direct", queue, "test message", {confirm:true}, (e,r)->
             should.not.exist e
             done()
-        , next 
+        , next
 
     ], done
 
@@ -66,7 +67,7 @@ describe 'Publisher', () ->
                 if j >=100
                   done()
 
-              i++ 
+              i++
 
 
   it 'test we can publish a message a string', (done)->
@@ -77,11 +78,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", queue, "test message", {}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -94,11 +95,11 @@ describe 'Publisher', () ->
   #       amqp = new AMQP {host:'localhost'}, (e, r)->
   #         should.not.exist e
   #         next()
-    
+
   #     (next)->
   #       amqp.publish "amq.direct", queue, "test message #{new Buffer(10240000).toString()}", {confirm: true}, (e,r)->
   #         should.not.exist e
-  #         next() 
+  #         next()
 
   #   ], done
 
@@ -111,11 +112,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", queue, {look:"im jason", jason:"nope"}, {}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -128,11 +129,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", queue, new Buffer(15), {}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -146,11 +147,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", uuid(), new Buffer(packetSize), {}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -164,11 +165,11 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", uuid(), new Buffer(packetSize), {confirm: true}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
@@ -183,12 +184,12 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         async.forEach [0...1000], (i, next)->
           amqp.publish "amq.direct", "queue-#{i}", new Buffer(packetSize), {confirm: true}, (e,r)->
             should.not.exist e
-            next() 
+            next()
         , next
 
     ], done
@@ -206,7 +207,7 @@ describe 'Publisher', () ->
       async.forEach [0...10], (i, next)->
         amqp.publish "amq.direct", "queue-#{i}", new Buffer(packetSize), {confirm: true}, (e,r)->
           should.not.exist e
-          next() 
+          next()
       , done
 
 
@@ -219,16 +220,16 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         amqp.publish "amq.direct", "idontExist", new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
     ], done
 
   it 'test when be publishing and an out of order op happens we recover', (done)->
-    this.timeout(4000)
+    this.timeout(10000)
     amqp = null
 
     testData = {test:"message"}
@@ -254,7 +255,7 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         q = amqp.queue {queue, autoDelete:false}, (e,q)->
           q.declare ()->
@@ -264,7 +265,7 @@ describe 'Publisher', () ->
         async.forEach [0...5], (i, done)->
           amqp.publish "amq.direct", queue, testData, {confirm: true}, (err, res)->
             # console.error "#{i}", err, res
-            if !err? then return done() else 
+            if !err? then return done() else
               setTimeout ()->
                 amqp.publish "amq.direct", queue, testData, {confirm: true}, (err, res)->
                 # console.error "*#{i}", err, res
@@ -275,7 +276,7 @@ describe 'Publisher', () ->
       (next)->
         consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
       (next)->
         async.forEach [0...50], (i, done)->
@@ -295,7 +296,7 @@ describe 'Publisher', () ->
 
 
   it 'test when an out of order op happens while publishing large messages we recover 915', (done)->
-    this.timeout(4000)
+    this.timeout(10000)
     amqp = null
 
     testData = {test:"message", size: new Buffer(1000)}
@@ -322,7 +323,7 @@ describe 'Publisher', () ->
         amqp = new AMQP {host:'localhost'}, (e, r)->
           should.not.exist e
           next()
-    
+
       (next)->
         q = amqp.queue {queue, autoDelete:false}, (e,q)->
           q.declare ()->
@@ -331,7 +332,7 @@ describe 'Publisher', () ->
       (next)->
         consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
           should.not.exist e
-          next() 
+          next()
 
       (next)->
         async.forEach [0...500], (i, done)->

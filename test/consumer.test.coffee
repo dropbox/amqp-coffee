@@ -12,6 +12,7 @@ AMQP = require('src/amqp')
 { MaxFrameBuffer, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
 describe 'Consumer', () ->
+  this.timeout(10000)
   it 'test we can consume a queue and get a message', (done)->
 
     testData = {test:"message"}
@@ -203,9 +204,9 @@ describe 'Consumer', () ->
 
 
   it 'test we can consume a queue several really big messages 173', (done)->
-    this.timeout(50000)
+    this.timeout(120000)
 
-    testData = new Buffer(100*1024*1024) # 10 mb ish
+    testData = new Buffer(10*1024*1024) # 10 mb ish
 
     amqp = null
     queue = uuid()
