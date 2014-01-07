@@ -1,0 +1,31 @@
+{ "name" : "amqp"
+, "description" : "AMQP driver for node"
+, "keywords" : [ "amqp" ]
+, "version" : "0.1.6"
+, "author" : { "name" : "David Barshow" }
+, "main": "./bin/src/amqp.js"
+, "scripts": {
+    "test": "./scripts/test.sh",
+    "install": "./scripts/compile.sh"
+  }
+, "dependencies": {
+    "async": "*",
+    "bson": "0.2.3",
+    "coffee-script": "1.4.0",
+    "underscore": "*",
+    "mocha": "*",
+    "debug": "*",
+    "node-uuid": "*",
+    "should": "*",
+    "request": "2.3.0"
+  } ,
+  "devDependencies":{
+    "istanbul"   : "0.1.43",
+    "jscoverage" : "0.3.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dropbox/amqp-coffee.git"
+  },
+  "engines" : { "node" : "0.8 || 0.10" }
+}
