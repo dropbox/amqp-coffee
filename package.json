@@ -1,4 +1,4 @@
-{ "name" : "amqp"
+{ "name" : "amqp-coffee"
 , "description" : "AMQP driver for node"
 , "keywords" : [ "amqp" ]
 , "version" : "0.1.6"
