@@ -17,7 +17,7 @@
     "debug": "*",
     "node-uuid": "*",
     "should": "*",
-    "request": "2.3.0"
+    "request": "2.30.0"
   } ,
   "devDependencies":{
     "istanbul"   : "0.1.43",
