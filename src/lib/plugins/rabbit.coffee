@@ -37,7 +37,8 @@ module.exports =
 
       # connection.connectionOptions.hosts.hosts is set as toLowerCase in Connection
       for host, i in connection.connectionOptions.hosts
-        if host.host is masternode
+
+        if host.host is masternode or (host.host.indexOf('.') isnt -1 and host.host.split('.')[0] is masternode)
           connection.connectionOptions.hosti = i
           connection.updateConnectionOptionsHostInformation()
           return callback(null, true)
