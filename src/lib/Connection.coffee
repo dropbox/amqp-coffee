@@ -37,7 +37,6 @@ class Connection extends EventEmitter
     @state : opening | open | closed | reconnecting | destroyed
 
   ###
-
   constructor: (args, cb)->
     @id = Math.round(Math.random() * 1000)
 
@@ -51,24 +50,32 @@ class Connection extends EventEmitter
 
       (next)=>
         # determine to host to connect to if we have an array of hosts
-        if Array.isArray(@connectionOptions.host)
-          @connectionOptions.hosts = @connectionOptions.host.map (host)-> return host.toLowerCase()
+        if !Array.isArray(@connectionOptions.host)
+          @connectionOptions.host = [@connectionOptions.host]
 
+        @connectionOptions.hosts = @connectionOptions.host.map (uri)=>
+          if uri.port? and uri.host?
+            return {host: uri.host.toLowerCase(), port: parseInt(uri.port)}
 
-          if !@connectionOptions.hostRandom
-            @connectionOptions.hosti = 0
-            @connectionOptions.host  = @connectionOptions.hosts[@connectionOptions.hosti]
-            next()
+          # our host name has a : and theat implies a uri with host and port
+          else if typeof(uri) is 'string' and uri.indexOf(":") isnt -1
+            [host, port] = uri.split(":")
+            return {host: host.toLowerCase(), port: parseInt(port)}
+
+          else if typeof(uri) is 'string'
+            return {host: uri.toLowerCase(), port: @connectionOptions.port}
+
           else
-            @connectionOptions.hosti = Math.floor(Math.random() * @connectionOptions.hosts.length)
-            @connectionOptions.host  = @connectionOptions.hosts[@connectionOptions.hosti]
-            next()
-        else
-          next()
+            throw new Error("we dont know what do do with the host #{uri}")
 
-      (next)=>
-        @determinePort()
+        @connectionOptions.hosti = 0
+
+        if @connectionOptions.hostRandom
+          @connectionOptions.hosti = Math.floor(Math.random() * @connectionOptions.hosts.length)
+
+        @updateConnectionOptionsHostInformation()
         next()
+
 
       (next)=>
         if @connectionOptions.rabbitMasterNode?.queue?
@@ -99,12 +106,10 @@ class Connection extends EventEmitter
             debug 1, ()-> return "Connection closed reconnecting..."
 
             _.delay ()=>
-              # rotate hosts if we have hosts
-              if @connectionOptions.hosts?
+              # rotate hosts if we have multiple hosts
+              if @connectionOptions.hosts.length > 1
                 @connectionOptions.hosti = (@connectionOptions.hosti + 1) % @connectionOptions.hosts.length
-                @connectionOptions.host  = @connectionOptions.hosts[@connectionOptions.hosti]
-
-                @determinePort()
+                @updateConnectionOptionsHostInformation()
 
               @connection.connect @connectionOptions.port, @connectionOptions.host
             , @connectionOptions.reconnectDelayTime
@@ -119,6 +124,10 @@ class Connection extends EventEmitter
 
     super()
     return @
+
+  updateConnectionOptionsHostInformation: ()=>
+    @connectionOptions.host  = @connectionOptions.hosts[@connectionOptions.hosti].host
+    @connectionOptions.port  = @connectionOptions.hosts[@connectionOptions.hosti].port
 
   # User called functions
   queue: (args, cb)->
@@ -208,17 +217,6 @@ class Connection extends EventEmitter
       for channel, value of @channels
         if channel isnt "0"
           @channels[channel]._channelClosed
-
-  determinePort: ()=>
-    if @connectionOptions.host.port? and @connectionOptions.host.host?
-      @connectionOptions.port = @connectionOptions.host.port
-      @connectionOptions.host = @connectionOptions.host.host
-
-    # our host name has a : and theat implies a uri with host and port
-    else if @connectionOptions.host.indexOf(":") isnt -1
-      [host, port] = @connectionOptions.host.split(":")
-      @connectionOptions.host = host
-      @connectionOptions.port = port
 
   # we should expect a heartbeat at least once every heartbeat interval x 2
   # we should reset this timer every time we get a heartbeat
