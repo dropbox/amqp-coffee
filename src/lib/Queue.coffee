@@ -39,18 +39,30 @@ class Queue
 
     @taskPush methods.queueDeclare, declareOptions, methods.queueDeclareOk, cb
 
-  bind: (exchange, routingKey, cb)=>
+  bind: (exchange, routingKey, queueName, cb)=>
+    if typeof queueName is 'string'
+      queueName =  queueName
+    else
+      cb = queueName
+      queueName = @queueOptions.queue
+
     queueBindOptions = {
-      queue:      @queueOptions.queue
+      queue:      queueName
       exchange:   exchange
       routingKey: routingKey
       arguments: {}
     }
     @taskPush methods.queueBind, queueBindOptions, methods.queueBindOk, cb
 
-  unbind: (exchange, routingKey, cb)=>
+  unbind: (exchange, routingKey, queueName, cb)=>
+    if typeof queueName is 'string'
+      queueName =  queueName
+    else
+      cb = queueName
+      queueName = @queueOptions.queue
+
     queueUnbindOptions = {
-      queue:      @queueOptions.queue
+      queue:      queueName
       exchange:   exchange
       routingKey: routingKey
       arguments: {}

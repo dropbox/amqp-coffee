@@ -40,11 +40,26 @@ class Connection extends EventEmitter
   constructor: (args, cb)->
     @id = Math.round(Math.random() * 1000)
 
+    if typeof args is 'function'
+      cb = args
+      args = {}
+
     # this is the main connect event
     cb = _.once cb if cb?
     @state = 'opening'
 
     @connectionOptions = _.defaults args, defaults.connection
+
+    # setup our defaults
+    @channelCount = 0
+
+    @channels   = {0:this}
+    @queues     = {}
+    @exchanges  = {}
+
+    @sendBuffer = new Buffer(MaxFrameBuffer)
+
+    @channelManager = new ChannelManager(@)
 
     async.series [
 
@@ -136,7 +151,6 @@ class Connection extends EventEmitter
     @channelManager.temporaryChannel (err, channel)->
       if err? then return cb err
       q = new Queue(channel, args, cb)
-      return q
 
   exchange: (args, cb)->
     if !cb? or typeof(cb) isnt 'function' then return cb("args and cb required for exchange")
@@ -144,7 +158,6 @@ class Connection extends EventEmitter
     @channelManager.temporaryChannel (err, channel)->
       if err? then return cb err
       e = new Exchange(channel, args, cb)
-      return e
 
   consume: (queueName, options, messageParser, cb)->
     @channelManager.consumerChannel (err, channel)=>
@@ -192,16 +205,7 @@ class Connection extends EventEmitter
   # Service Called Functions
   _connectedFirst: ()=>
     debug 1, ()=> return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
-    # setup our defaults
-    @channelCount = 0
 
-    @channels   = {0:this}
-    @queues     = {}
-    @exchanges  = {}
-
-    @sendBuffer = new Buffer(MaxFrameBuffer)
-
-    @channelManager = new ChannelManager(@)
 
   _connected: ()->
     @_resetHeartbeatTimer()
