@@ -87,6 +87,18 @@ describe 'Publisher', () ->
     ], done
 
 
+  it 'test we can publish without waiting for a connection', (done)->
+    amqp = null
+    queue = uuid()
+
+    amqp = new AMQP {host:'localhost'}, (e, r)->
+      should.not.exist e
+
+    amqp.publish "amq.direct", queue, "test message", {}, (e,r)->
+      should.not.exist e
+      done()
+
+
   # it 'test we can publish a big string message', (done)->
   #   amqp = null
   #   queue = uuid()

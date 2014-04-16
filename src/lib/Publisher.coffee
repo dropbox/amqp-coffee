@@ -42,6 +42,13 @@ class Publisher extends Channel
     if @confirm then @confirmMode()
 
   publish: (exchange, routingKey, data, options, cb)=>
+
+    if typeof options is 'function'
+      cb = options
+      options = {}
+
+    if !options? then options = {}
+
     if @state isnt "open" or (@confirm and @confirmState isnt "open")
       if @state is "opening" or @state is "closed" or (@confirm and @confirmState is 'opening')
 
