@@ -59,6 +59,14 @@ class Consumer extends Channel
     @consumerState = 'canceled'
     @taskPush methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, cb
 
+  pause: (cb)->
+    if @consumerState isnt 'canceled' then @cancel(cb) else cb()
+
+  resume: (cb)->
+    if @consumerState isnt 'open' then @_consume(cb) else cb()
+
+  flow: (active, cb)->
+    if active then @resume(cb) else @pause(cb)
 
   setQos: (prefetchCount, cb)->
     if typeof prefetchCount is 'function'

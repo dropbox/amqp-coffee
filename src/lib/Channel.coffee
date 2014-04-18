@@ -104,15 +104,6 @@ class Channel extends EventEmitter
         methodId  : 0
       }
 
-  flow: (active, cb)->
-    @taskPush methods.channelFlow, {active}, methods.channelFlowOk, cb
-
-  pause: (cb)->
-    @flow(false, cb)
-
-  resume: (cb)->
-    @flow(true, cb)
-
   waitForMethod: (method, cb)->
     @waitingCallbacks[method.name] = [] if !@waitingCallbacks[method]?
     @waitingCallbacks[method.name].push cb
