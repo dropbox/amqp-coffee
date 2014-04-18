@@ -23,7 +23,8 @@
     "debug": "*",
     "node-uuid": "*",
     "should": "*",
-    "request": "2.30.0"
+    "request": "2.30.0",
+    "semver": "2.2.1"
   } ,
   "devDependencies":{
     "istanbul"   : "0.1.43",

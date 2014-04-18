@@ -51,8 +51,10 @@ module.exports =
     per-consumer (for new consumers on the channel; existing ones being
     unaffected) and global=true to mean that the QoS settings should apply
     per-channel.
+
+    THIS IS CHANGED TO TRUE FOR RABBITMQ VERSION 3.3.0 AND UP IN CONSUMER
     ###
-    global: true
+    global: false
 
 
   exchange:
