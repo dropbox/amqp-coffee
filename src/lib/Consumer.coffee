@@ -5,10 +5,10 @@ debug     = require('./config').debug('amqp:Consumer')
 Channel   = require('./Channel')
 _         = require('underscore')
 async     = require('async')
+semver    = require('semver')
 defaults  = require('./defaults')
 
 {BSON} = require('bson').BSONPure
-
 
 { methodTable, classes, methods } = require('./config').protocol
 { MaxFrameSize } = require('./config').constants
@@ -34,7 +34,16 @@ class Consumer extends Channel
     if options.prefetchCount?
       # this should be a qos channel and we should expect ack's on messages
       @qos = true
-      qosOptions    = _.defaults {prefetchCount: options.prefetchCount}, defaults.basicQos
+
+      # Rabbitmq 3.3.0 changes the behavoir of qos and global should be the default.
+      if @connection.serverProperties?.product == 'RabbitMQ' and\
+         @connection.serverProperties?.version? and \
+         semver.gte( @connection.serverProperties.version, '3.3.0' )
+        global = true
+      else
+        global = defaults.basicQos.global
+
+      qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, {global}, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
     else
@@ -59,6 +68,14 @@ class Consumer extends Channel
     @consumerState = 'canceled'
     @taskPush methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, cb
 
+  pause: (cb)->
+    if @consumerState isnt 'canceled' then @cancel(cb) else cb()
+
+  resume: (cb)->
+    if @consumerState isnt 'open' then @_consume(cb) else cb()
+
+  flow: (active, cb)->
+    if active then @resume(cb) else @pause(cb)
 
   setQos: (prefetchCount, cb)->
     if typeof prefetchCount is 'function'

@@ -1,7 +1,7 @@
 { "name" : "amqp-coffee"
 , "description" : "AMQP driver for node"
 , "keywords" : [ "amqp" ]
-, "version" : "0.1.8"
+, "version" : "0.1.9"
 , "author" : { "name" : "David Barshow" },
   "licenses": [
     {
@@ -23,7 +23,8 @@
     "debug": "*",
     "node-uuid": "*",
     "should": "*",
-    "request": "2.30.0"
+    "request": "2.30.0",
+    "semver": "2.2.1"
   } ,
   "devDependencies":{
     "istanbul"   : "0.1.43",

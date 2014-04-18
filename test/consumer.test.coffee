@@ -484,7 +484,7 @@ describe 'Consumer', () ->
           next()
 
       (next)->
-        amqp.queue {queue}, (e,q)->
+        amqp.queue {autoDelete:false, queue}, (e,q)->
           q.declare ()->
             q.bind "amq.direct", queue, next
 
