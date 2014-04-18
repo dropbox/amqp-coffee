@@ -680,9 +680,59 @@ describe 'Consumer', () ->
     ]
 
 
-  it 'test we can consume and interrupt midstream and get all the messages', (done)->
 
-    proxy = new proxy.route(7002, 5672, "localhost")
+  it 'test we can consume and interrupt a autoDelete queue 854', (done)->
+
+    thisproxy = new proxy.route(7007, 5672, "localhost")
+    amqp = null
+
+    testData = {test:"message"}
+    amqp = null
+    queue = uuid()
+    messagesRecieved = 0
+    consumer = null
+
+    messageProcessor = (m)->
+      m.data.should.eql testData
+      messagesRecieved++
+
+      if messagesRecieved is 5
+        thisproxy.interrupt()
+
+      m.ack()
+
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', port: 7007}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue, autoDelete:true}, (e,q)->
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+      (next)->
+        async.forEach [0...10], (i, done)->
+          amqp.publish "amq.direct", queue, testData, {confirm: true}, done
+        , next
+
+      (next)->
+        consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+
+        consumer.on 'error', (error)->
+          should.exist error
+          error.error.replyCode.should.eql 404
+          done()
+    ]
+
+
+  it 'test we can consume and interrupt midstream and get all the messages 855', (done)->
+
+    thisproxy = new proxy.route(7003, 5672, "localhost")
     amqp = null
 
 
@@ -697,7 +747,7 @@ describe 'Consumer', () ->
       messagesRecieved++
 
       if messagesRecieved is 5
-        proxy.interrupt()
+        thisproxy.interrupt()
 
       if messagesRecieved is 10
         done()
@@ -706,7 +756,7 @@ describe 'Consumer', () ->
 
     async.series [
       (next)->
-        amqp = new AMQP {host:'localhost', port: 7002}, (e, r)->
+        amqp = new AMQP {host:'localhost', port: 7003}, (e, r)->
           should.not.exist e
           next()
 
