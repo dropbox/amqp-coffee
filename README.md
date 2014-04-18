@@ -47,6 +47,10 @@ amqpConnection = new AMQP {host:'localhost'}, (e, r)->
     * [exchange.delete([exchangeDeleteOptions], [callback])](#exchangedeleteexchangedeleteoptions-callback)
   * [connection.publish(exchange, routingKey, data, [publishOptions], [callback])](#connectionpublishexchange-routingkey-data-publishoptions-callback)
   * [connection.consume(queueName, options, messageListener, [callback])](#connectionconsumequeuename-options-messagelistener-callback)
+    * [consumer.setQos(prefetchCount, [callback])](#consumesetqosprefetchcount-callback)
+    * [consumer.cancel([callback])](#consumercancelcallback)
+    * [consumer.resume([callback])](#consumerresumecallback)
+    * [consumer.pause([callback])](#consumerpausecallback)
   * [connection.close()](#connectionclose)
 
 
@@ -212,14 +216,17 @@ amqp = new AMQP ()->
 
 Will update the prefetch count of an already existing consumer; can be used to dynamically tune a consumer.
 
-#### consume.pause([callback])
-consumer.flow(false, callback)
+#### consumer.cancel([callback])
+sends basicCancel and waits on basicCancelOk
 
-#### consume.resume([callback])
-consumer.flow(true, callback)
+#### consumer.pause([callback])
+consumer.cancel
 
-#### consume.flow(active, [callback])
-will send channelFlow with active true or false.
+#### consumer.resume([callback])
+consumer.consume, sets up the consumer with a new consumer tag
+
+#### consumer.flow(active, [callback])
+An alias for consumer.pause (active == false) and consome.resume (active == true)
 
 ### connection.close()
 
