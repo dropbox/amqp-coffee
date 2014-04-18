@@ -107,7 +107,12 @@ class Consumer extends Channel
   _channelOpen: ()=>
     if @consumeOptions? and @consumerState is 'closed' then @_consume()
 
-  _channelClosed: ()=>
+  _channelClosed: (reason)=>
+    # if we are trying to reconnect or connecting for the first time and get an error we can emit it
+    if @consumerState isnt 'open'
+      if !reason? then reason = {}
+      @emit 'error', reason
+
     @outstandingDeliveryTags = {}
     if @connection.state is 'open' and @consumerState is 'open'
       if @connection.state is 'open'
@@ -191,6 +196,17 @@ class Consumer extends Channel
           get: ()=>
             try
               return BSON.deserialize message.raw
+            catch e
+              console.error e
+              return message.raw
+        }
+
+      else if @incomingMessage.properties?.contentType is "string/utf8"
+        # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
+        Object.defineProperty message, "data", {
+          get: ()=>
+            try
+              return message.raw.toString('utf8')
             catch e
               console.error e
               return message.raw

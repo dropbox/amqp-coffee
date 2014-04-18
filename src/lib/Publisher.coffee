@@ -64,6 +64,7 @@ class Publisher extends Channel
 
     # data must be a buffer
     if typeof data is 'string'
+      options.contentType = 'string/utf8'
       data = new Buffer(data, 'utf8')
 
     else if typeof data is 'object' and !(data instanceof Buffer)
