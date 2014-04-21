@@ -133,6 +133,37 @@ describe 'Publisher', () ->
     ], done
 
 
+  it 'test we can publish a string message 413', (done)->
+    amqp = null
+    queueName = uuid()
+    content = "ima string"
+    amqp = null
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName}, (err, queue)->
+          queue.declare()
+          queue.bind 'amq.direct', queueName, next
+
+      (next)->
+        amqp.publish "amq.direct", queueName, content, {}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.consume queueName, {}, (message)->
+          message.data.should.eql content
+          next()
+
+    ], done
+
+
+
   it 'test we can publish a buffer message', (done)->
     amqp = null
     queue = uuid()

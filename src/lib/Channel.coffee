@@ -215,7 +215,7 @@ class Channel extends EventEmitter
         @state = 'closed'
 
         @_channelClosed("Channel closed")
-        @_callOutstadingCallbacks("Channel closed")
+        @_callOutstadingCallbacks({msg: "Channel closed"})
 
       when methods.channelClose
         @connection.channelManager.channelClosed(channel)
@@ -227,7 +227,7 @@ class Channel extends EventEmitter
           closingMethod = methodTable[args.classId][args.methodId].name
           @callbackForMethod(methods["#{closingMethod}Ok"])(args) #this would be the error
 
-        @_channelClosed("Server closed channel #{JSON.stringify args}")
+        @_channelClosed({msg: "Server closed channel", error: args})
         @_callOutstadingCallbacks("Channel closed by server #{JSON.stringify args}")
 
       when methods.channelOpenOk

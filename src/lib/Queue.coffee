@@ -29,7 +29,7 @@ class Queue
 
     if cb? then cb(null, @)
 
-  declare: (args, cb)->
+  declare: (args={}, cb)->
     if typeof args is 'function'
       cb = args
       args = {}
@@ -70,28 +70,30 @@ class Queue
     @taskPush methods.queueUnbind, queueUnbindOptions, methods.queueUnbindOk, cb
 
 
-  messageCount: (args, cb)=>
+  messageCount: (args={}, cb)=>
     if typeof args is 'function'
       cb = args
       args = {}
 
-    @declare args, (err, res)->
+    declareOptions = _.defaults args, @queueOptions
+
+    @declare declareOptions, (err, res)->
       cb(err, res.messageCount)
 
-  consumerCount: (args, cb)->
+  consumerCount: (args={}, cb)->
     if typeof args is 'function'
       cb = args
       args = {}
 
-    @declare args, (err, res)->
+    declareOptions = _.defaults args, @queueOptions
+
+    @declare declareOptions, (err, res)->
       cb(err, res.consumerCount)
 
-  delete: (args, cb)=>
+  delete: (args={}, cb)=>
     if typeof args is 'function'
       cb = args
       args = {}
-
-    if !args? then args = {}
 
     queueDeleteArgs = _.defaults args, defaults.queueDelete, {queue: @queueOptions.queue}
     @taskPush methods.queueDelete, queueDeleteArgs, methods.queueDeleteOk, cb

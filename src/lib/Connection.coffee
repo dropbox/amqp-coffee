@@ -217,11 +217,6 @@ class Connection extends EventEmitter
   _closed: ()=>
     @_clearHeartbeatTimer()
 
-    if @channels?
-      for channel, value of @channels
-        if channel isnt "0"
-          @channels[channel]._channelClosed
-
   # we should expect a heartbeat at least once every heartbeat interval x 2
   # we should reset this timer every time we get a heartbeat
 

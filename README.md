@@ -47,7 +47,7 @@ amqpConnection = new AMQP {host:'localhost'}, (e, r)->
     * [exchange.delete([exchangeDeleteOptions], [callback])](#exchangedeleteexchangedeleteoptions-callback)
   * [connection.publish(exchange, routingKey, data, [publishOptions], [callback])](#connectionpublishexchange-routingkey-data-publishoptions-callback)
   * [connection.consume(queueName, options, messageListener, [callback])](#connectionconsumequeuename-options-messagelistener-callback)
-    * [consumer.setQos(prefetchCount, [callback])](#consumesetqosprefetchcount-callback)
+    * [consumer.setQos(prefetchCount, [callback])](#consumersetqosprefetchcount-callback)
     * [consumer.cancel([callback])](#consumercancelcallback)
     * [consumer.resume([callback])](#consumerresumecallback)
     * [consumer.pause([callback])](#consumerpausecallback)
@@ -84,6 +84,15 @@ amqp = new amqp-coffee {host: 'localhost'}, (error, amqpConnection)->
    assert(amqp == amqpConnection)
 ```
 
+#### Reconnect Flow
+On a connection close, we start the reconnect process if `reconnect` is true.
+After the `reconnectDelayTime` the hosts are rotated if more than one `host` is specified.
+A new connection is atempted, if the connection is not sucessful this process repeats.
+After a connection is re-establed, all of the channels are reset, this atempts to reopen that channel.  Different channel types re-establish there channels differently.
+* Publisher channels, will only reconnect when a publish is atempted.
+* Consumer channels will reconnect and resume consuming.  If it was a autoDelete queue, this could fail.  Make sure you listen to the ready even on the connection to re-set up and consume any autoDelete queues.
+* Queue / Exchange channels are recreated on demand.
+
 ### Event: 'ready'
 Emitted when the connection is open successfully.  This will be called after each successful reconnect.
 
@@ -96,6 +105,7 @@ Very rare, only emitted when there's a server version mismatch
 
 ### connection.queue([queueOptions],[callback])
 
+This returns a channel that can be used to declare, bind, unbind, or delete queus.  This on its own does NOT declare a queue.
 When creating a queue class using connection.queue, you can specify options that will be used in all the child methods.
 
 The `queueOptions` argument should be an object which specifies:
@@ -141,6 +151,7 @@ Rabbitmq specific, re-declares the queue and returns the messageCount from the r
 Rabbitmq specific, re-declares the queue and returns the consumerCount from the response
 
 ### connection.exchange([exchangeArgs],[callback])
+This returns a channel that can be used to declare, bind, unbind, or delete exchanges.  This on its own does NOT declare a exchange.
 When creating an exchange class using connection.exchange, you can specify options that will be used in all the child methods.
 
 The `exchangeArgs` argument should be an object which specifies:
@@ -190,16 +201,18 @@ consumers use their own channels and are re-subscribed to on reconnect. Returns 
 * `callback`: a function that is called once the consume is setup
 
 messageListener is a function that gets a message object which has the following attributes:
-* `data`: the data in its parsed form, eg a parsed json object, or a buffer representing a string
+* `data`: a getter that returns the data in its parsed form, eg a parsed json object, a string, or the raw buffer
 * `raw`: the raw buffer that was returned
-* `ack` : only used when prefetchCount is specified
-* `reject` : only used when prefetchCount is specified
-* `retry` : only used when prefetchCount is specified
+* `properties`:  headers specified for the message
+* `size`: message body size
+* `ack()`: function : only used when prefetchCount is specified
+* `reject()`: function: only used when prefetchCount is specified
+* `retry()`: function: only used when prefetchCount is specified
 
 ```coffeescript
 listener = (message)->
   # we will only get 1 message at a time because prefetchCount is set to 1
-  console.log "Message Data", message.data.toString()
+  console.log "Message Data", message.data
   message.ack()
 
 amqp = new AMQP ()->
@@ -212,7 +225,10 @@ amqp = new AMQP ()->
       amqp.consume 'testing', {prefetchCount: 1}, listener, ()->
         console.log "Consumer Ready"
 ```
-#### consume.setQos(prefetchCount, [callback])
+#### consumer Event: error
+Errors will be emitted from the consumer if we can not consumer from that queue anymore.  For example if you're consuming a autoDelete queue and you reconnect that queue will be gone.  It will return the raw error message with code as the message.
+
+#### consumer.setQos(prefetchCount, [callback])
 
 Will update the prefetch count of an already existing consumer; can be used to dynamically tune a consumer.
 
