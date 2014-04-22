@@ -1,6 +1,7 @@
 #!/bin/sh
 SCRIPT_PATH="`dirname $0`"
 echo "amqp-coffee Compiling coffeescript to bin/"
+echo $SCRIPT_PATH
 
 rm -rf $SCRIPT_PATH/../bin
 mkdir $SCRIPT_PATH/../bin
