@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPT_PATH="`dirname $0`"
+SCRIPT_PATH=`dirname $0`
 echo "amqp-coffee Compiling coffeescript to bin/"
 echo $SCRIPT_PATH
 
@@ -9,6 +9,6 @@ mkdir $SCRIPT_PATH/../bin
 cp -r $SCRIPT_PATH/../src $SCRIPT_PATH/../bin/
 
 # compile all coffeescript files
-find $SCRIPT_PATH/../bin -name *.coffee | xargs coffee --compile
+find $SCRIPT_PATH/../bin -name "*.coffee" | xargs coffee --compile
 # remove all coffeescript files
-find $SCRIPT_PATH/../bin -name *.coffee | xargs rm
+find $SCRIPT_PATH/../bin -name "*.coffee" | xargs rm
