@@ -64,12 +64,20 @@ class Consumer extends Channel
 
     return @
 
+  close: (cb)=>
+    @cancel ()=>
+      super()
+      cb?()
+
   cancel: (cb)=>
-    @consumerState = 'canceled'
-    @taskPush methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, cb
+    if @consumerState isnt 'closed'
+      @consumerState = 'closed'
+      @taskPush methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, cb
+    else
+      cb?()
 
   pause: (cb)->
-    if @consumerState isnt 'canceled' then @cancel(cb) else cb()
+    if @consumerState isnt 'closed' then @cancel(cb) else cb()
 
   resume: (cb)->
     if @consumerState isnt 'open' then @_consume(cb) else cb()
@@ -109,7 +117,7 @@ class Consumer extends Channel
 
   _channelClosed: (reason)=>
     # if we are trying to reconnect or connecting for the first time and get an error we can emit it
-    if @consumerState isnt 'open'
+    if @consumerState isnt 'open' and @consumerState isnt 'closed'
       if !reason? then reason = {}
       @emit 'error', reason
 
@@ -128,22 +136,25 @@ class Consumer extends Channel
     if @subscription.qos and @subscription.outstandingDeliveryTags[@deliveryTag]?
       delete @subscription.outstandingDeliveryTags[@deliveryTag]
 
-      basicAckOptions = { deliveryTag: @deliveryTag, multiple: false }
-      @subscription.connection._sendMethod @subscription.channel, methods.basicAck, basicAckOptions
+      if @subscription.state is 'open'
+        basicAckOptions = { deliveryTag: @deliveryTag, multiple: false }
+        @subscription.connection._sendMethod @subscription.channel, methods.basicAck, basicAckOptions
 
   reject: ()->
     if @subscription.qos and @subscription.outstandingDeliveryTags[@deliveryTag]?
       delete @subscription.outstandingDeliveryTags[@deliveryTag]
 
-      basicAckOptions = { deliveryTag: @deliveryTag, requeue: false }
-      @subscription.connection._sendMethod @subscription.channel, methods.basicReject, basicAckOptions
+      if @subscription.state is 'open'
+        basicAckOptions = { deliveryTag: @deliveryTag, requeue: false }
+        @subscription.connection._sendMethod @subscription.channel, methods.basicReject, basicAckOptions
 
   retry: ()->
     if @subscription.qos and @subscription.outstandingDeliveryTags[@deliveryTag]?
       delete @subscription.outstandingDeliveryTags[@deliveryTag]
 
-      basicAckOptions = { deliveryTag: @deliveryTag, requeue: true }
-      @subscription.connection._sendMethod @subscription.channel, methods.basicReject, basicAckOptions
+      if @subscription.state is 'open'
+        basicAckOptions = { deliveryTag: @deliveryTag, requeue: true }
+        @subscription.connection._sendMethod @subscription.channel, methods.basicReject, basicAckOptions
 
   # CONTENT HANDLING
   _onMethod: (channel, method, args)->
