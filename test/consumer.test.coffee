@@ -730,6 +730,52 @@ describe 'Consumer', () ->
     ]
 
 
+  it 'test we can close a consumer channel 854.5', (done)->
+
+    amqp = null
+
+    testData = {test:"message"}
+    amqp = null
+    queue = uuid()
+    messagesRecieved = 0
+    consumer = null
+
+    messageProcessor = (m)->
+      m.data.should.eql testData
+      messagesRecieved++
+
+      if messagesRecieved is 5
+        consumer.close()
+
+        _.delay ()->
+          (messagesRecieved > 6).should.eql false
+          done()
+        , 200
+
+      m.ack()
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', port: 5672}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue, autoDelete:false}, (e,q)->
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+      (next)->
+        async.forEach [0...10], (i, done)->
+          amqp.publish "amq.direct", queue, testData, {confirm: true}, done
+        , next
+
+      (next)->
+        consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+    ]
+
   it 'test we can consume and interrupt midstream and get all the messages 855', (done)->
 
     thisproxy = new proxy.route(7003, 5672, "localhost")

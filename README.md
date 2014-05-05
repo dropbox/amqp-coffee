@@ -51,6 +51,7 @@ amqpConnection = new AMQP {host:'localhost'}, (e, r)->
     * [consumer.cancel([callback])](#consumercancelcallback)
     * [consumer.resume([callback])](#consumerresumecallback)
     * [consumer.pause([callback])](#consumerpausecallback)
+    * [consumer.close([callback])](#consumerclosecallback)
   * [connection.close()](#connectionclose)
 
 
@@ -233,10 +234,13 @@ Errors will be emitted from the consumer if we can not consumer from that queue 
 Will update the prefetch count of an already existing consumer; can be used to dynamically tune a consumer.
 
 #### consumer.cancel([callback])
-sends basicCancel and waits on basicCancelOk
+Sends basicCancel and waits on basicCancelOk
 
 #### consumer.pause([callback])
 consumer.cancel
+
+#### consumer.close([callback])
+Calls consumer.cancel, if we're currently consuming.  Then calls channel.close and calls the callback as soon as the channel close is sent, NOT when channelCloseOk is returned.
 
 #### consumer.resume([callback])
 consumer.consume, sets up the consumer with a new consumer tag
