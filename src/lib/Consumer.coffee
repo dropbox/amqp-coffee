@@ -5,7 +5,6 @@ debug     = require('./config').debug('amqp:Consumer')
 Channel   = require('./Channel')
 _         = require('underscore')
 async     = require('async')
-semver    = require('semver')
 defaults  = require('./defaults')
 
 {BSON} = require('bson').BSONPure
@@ -35,15 +34,15 @@ class Consumer extends Channel
       # this should be a qos channel and we should expect ack's on messages
       @qos = true
 
-      # Rabbitmq 3.3.0 changes the behavoir of qos and global should be the default.
-      if @connection.serverProperties?.product == 'RabbitMQ' and\
-         @connection.serverProperties?.version? and \
-         semver.gte( @connection.serverProperties.version, '3.3.0' )
-        global = true
-      else
-        global = defaults.basicQos.global
+      # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
+      if !options.global? and\
+          @connection.serverProperties?.product == 'RabbitMQ' and\
+          @connection.serverProperties?.version? and \
+          @connection.serverProperties?.capabilities?.per_consumer_qos == true
 
-      qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, {global}, defaults.basicQos
+        options.global = true
+
+      qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
     else
