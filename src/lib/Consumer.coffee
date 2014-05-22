@@ -37,8 +37,8 @@ class Consumer extends Channel
       # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
       if !options.global? and\
           @connection.serverProperties?.product == 'RabbitMQ' and\
-          @connection.serverProperties?.version? and \
-          @connection.serverProperties?.capabilities?.per_consumer_qos == true
+          ( @connection.serverProperties?.capabilities?.per_consumer_qos == true or \
+          @connection.serverProperties?.version == "3.3.0" )
 
         options.global = true
 
