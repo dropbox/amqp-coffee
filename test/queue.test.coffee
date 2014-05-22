@@ -284,7 +284,8 @@ describe 'Queue', () ->
     ], done
 
 
-  it 'test we can unbind a queue', (done)->
+  it 'test we can unbind a queue 2885', (done)->
+    this.timeout(1000000)
     amqp = null
     queue = null
     queueName = uuid()
@@ -312,10 +313,144 @@ describe 'Queue', () ->
           next()
 
       (next)->
+        queue.bind "amq.direct", "testing2", (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
         queue.unbind "amq.direct", "testing", (e,r)->
           should.not.exist e
           next()
 
+      (next)->
+        queue.unbind "amq.direct", "testing2", (e,r)->
+          should.not.exist e
+          next()
+      (next)->
+        _.delay ->
+          openChannels = 0
+          for channelNumber,channel of amqp.channels
+            openChannels++ if channel.state is 'open'
+          openChannels.should.eql 2
+          next()
+        , 10
+
+      (next)->
+        _.delay ->
+          openChannels = 0
+          for channelNumber,channel of amqp.channels
+            openChannels++ if channel.state is 'open'
+          openChannels.should.eql 1
+          next()
+        , 500
+    ], done
+
+
+  it 'test we can unbind a queue with no callbacks 2886', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        queue.bind "amq.direct", "test1"
+        queue.bind "amq.direct", "test2"
+        queue.bind "amq.direct", "test3"
+        _.delay next, 30
+
+      (next)->
+        queue.unbind "amq.direct", "test1"
+        queue.unbind "amq.direct", "test2"
+        queue.unbind "amq.direct", "test3"
+        _.delay next, 500
+
+      (next)->
+        openChannels = 0
+        for channelNumber,channel of amqp.channels
+          openChannels++ if channel.state is 'open'
+        openChannels.should.eql 1
+        next()
+    ], done
+
+
+
+  it 'test we can unbind a queue with no callbacks on bad binds 2887', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+    consumer = null
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName, passive:false, exclusive: true, autodelete: true}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        consumer = amqp.consume queueName, {}, (message)->
+          console.error messge
+        , (cb)->
+          next()
+
+      (next)->
+        queue.bind "amq.direct", "test1"
+        queue.bind "amq.direct", "test2"
+        queue.bind "amq.direct", "test3"
+        queue.bind "amq.direct2", "test5"
+        _.delay next, 30
+
+      (next)->
+        queue.unbind "amq.direct", "test1"
+        queue.unbind "amq.direct", "test2"
+        queue.unbind "amq.direct", "test3"
+        queue.unbind "amq.direct", "test4"
+        _.delay next, 500
+
+      (next)->
+        queue.unbind "amq.direct", "test1"
+        queue.unbind "amq.direct", "test2"
+        queue.unbind "amq.direct", "test3"
+        queue.unbind "amq.direct", "test4"
+        _.delay next, 500
+
+      (next)->
+        consumer.close()
+        _.delay next, 50
+
+      (next)->
+        openChannels = 0
+        for channelNumber,channel of amqp.channels
+          openChannels++ if channel.state is 'open'
+        openChannels.should.eql 1
+        next()
     ], done
 
 
