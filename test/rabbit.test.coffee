@@ -9,6 +9,7 @@ AMQP = require('src/amqp')
 
 describe 'Rabbit Plugin', () ->
   it 'tests we can connect with a master node for a non-existant queue', (done) ->
+    this.timeout(5000)
     amqp = null
     queue = uuid()
 
