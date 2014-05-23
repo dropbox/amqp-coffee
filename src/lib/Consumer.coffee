@@ -34,14 +34,6 @@ class Consumer extends Channel
       # this should be a qos channel and we should expect ack's on messages
       @qos = true
 
-      # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
-      if !options.global? and\
-          @connection.serverProperties?.product == 'RabbitMQ' and\
-          ( @connection.serverProperties?.capabilities?.per_consumer_qos == true or \
-          @connection.serverProperties?.version == "3.3.0" )
-
-        options.global = true
-
       qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
@@ -89,7 +81,18 @@ class Consumer extends Channel
       cb = prefetchCount
       qosOptions = @qosOptions
     else
-      qosOptions = _.defaults({prefetchCount},@qosOptions)
+      # if our prefetch count has changed and we're rabbit version > 3.3.*
+      # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
+      if prefetchCount isnt @qosOptions.prefetchCount and \
+         @connection.serverProperties?.product == 'RabbitMQ' and\
+         ( @connection.serverProperties?.capabilities?.per_consumer_qos == true or \
+         @connection.serverProperties?.version == "3.3.0" )
+
+        global = true
+      else
+        global = null # use the default of our already existing value
+
+      qosOptions = _.defaults({prefetchCount, global}, @qosOptions)
 
     @taskPush methods.basicQos, qosOptions, methods.basicQosOk, cb
 
