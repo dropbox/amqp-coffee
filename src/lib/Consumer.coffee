@@ -68,10 +68,10 @@ class Consumer extends Channel
       cb?()
 
   pause: (cb)->
-    if @consumerState isnt 'closed' then @cancel(cb) else cb()
+    if @consumerState isnt 'closed' then @cancel(cb) else cb?()
 
   resume: (cb)->
-    if @consumerState isnt 'open' then @_consume(cb) else cb()
+    if @consumerState isnt 'open' then @_consume(cb) else cb?()
 
   flow: (active, cb)->
     if active then @resume(cb) else @pause(cb)
