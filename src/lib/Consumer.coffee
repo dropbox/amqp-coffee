@@ -25,7 +25,7 @@ class Consumer extends Channel
     return @
 
   consume: (queueName, options, messageHandler, cb)->
-    @consumerTag = "#{os.hostname()}-#{process.pid}-#{Date.now()}"
+    @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
     debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel}"
     @consumerState = 'opening'
@@ -34,7 +34,10 @@ class Consumer extends Channel
       # this should be a qos channel and we should expect ack's on messages
       @qos = true
 
-      qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, defaults.basicQos
+      providedOptions = {prefetchCount: options.prefetchCount}
+      providedOptions['global'] = options.global if options.global?
+
+      qosOptions    = _.defaults providedOptions, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
     else
@@ -89,8 +92,7 @@ class Consumer extends Channel
          @connection.serverProperties?.version == "3.3.0" )
 
         global = true
-      else
-        global = null # use the default of our already existing value
+
 
       qosOptions = _.defaults({prefetchCount, global}, @qosOptions)
 

@@ -198,6 +198,7 @@ consumers use their own channels and are re-subscribed to on reconnect. Returns 
   * `exclusive`: false
   * `noWait`: false
   * `prefetchCount` : integer.  If specified the consumer will enter qos mode and you will have to ack messages.  If specified `noAck` will be set to false
+  * `consumerTag`: optional string.  If not specified one will be generated for you.
 * `messageListener`: a function (message)
 * `callback`: a function that is called once the consume is setup
 

@@ -99,6 +99,7 @@ class Connection extends EventEmitter
           next()
 
       (next)=>
+        if @connection then @connection.removeAllListeners()
 
         @connection = net.connect @connectionOptions.port, @connectionOptions.host
         @connection.once 'connect', ()=> @_connectedFirst()
@@ -201,18 +202,19 @@ class Connection extends EventEmitter
     debug "Trying to crash connection by an oow op"
     @_sendBody @channel, new Buffer(100), {}
 
-
   # Service Called Functions
   _connectedFirst: ()=>
     debug 1, ()=> return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
 
-
   _connected: ()->
     @_resetHeartbeatTimer()
-    @_setupParser ()=>
-      async.forEachSeries _.keys(@channels), (channel, done)=>
-        if channel is "0" then done() else
-          @channels[channel].reset done
+    @_setupParser(@_reestablishChannels)
+
+  _reestablishChannels: ()=>
+    async.forEachSeries _.keys(@channels), (channel, done)=>
+      if channel is "0" then done() else
+        @channels[channel].reset done
+
 
   _closed: ()=>
     @_clearHeartbeatTimer()
@@ -246,6 +248,8 @@ class Connection extends EventEmitter
     @_clearHeartbeatTimer()
 
   _setupParser: (cb)->
+    if @parser? then @parser.removeAllListeners()
+
     # setup the parser
     @parser = new AMQPParser('0-9-1', 'client', @connection)
 
@@ -259,7 +263,9 @@ class Connection extends EventEmitter
     @connection.removeAllListeners('data') # cleanup reconnections
     @connection.on 'data', (data)=> @parser.execute data
 
-    @once 'ready', cb if cb?
+    if cb?
+      @removeListener('ready', cb)
+      @once 'ready', cb
 
   _sendMethod: (channel, method, args)=>
     if channel isnt 0 and @state in ['opening', 'reconnecting']
