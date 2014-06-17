@@ -11,6 +11,11 @@ describe 'Connection', () ->
       should.not.exist e
       done()
 
+  it 'tests it can connect to nested hosts array', (done) ->
+    amqp = new AMQP {host:[['localhost']]}, (e, r)->
+      should.not.exist e
+      done()
+
   it 'we fail connecting to an invalid host', (done) ->
     amqp = new AMQP {host:'iamnotthequeueyourlookingfor'}, (e, r)->
       should.exist e

@@ -65,10 +65,7 @@ class Connection extends EventEmitter
 
       (next)=>
         # determine to host to connect to if we have an array of hosts
-        if !Array.isArray(@connectionOptions.host)
-          @connectionOptions.host = [@connectionOptions.host]
-
-        @connectionOptions.hosts = @connectionOptions.host.map (uri)=>
+        @connectionOptions.hosts = _.flatten([@connectionOptions.host]).map (uri)=>
           if uri.port? and uri.host?
             return {host: uri.host.toLowerCase(), port: parseInt(uri.port)}
 
