@@ -1,12 +1,7 @@
 debug               = require('./config').debug('amqp:Connection')
-try
-  clientVersion     = JSON.parse(require('fs').readFileSync("#{__dirname}/../../../package.json")).version
-catch e
-  clientVersion = '0.0.1'
 
 {EventEmitter}      = require('events')
 net                 = require('net')
-os                  = require('os')
 _                   = require('underscore')
 async               = require('async')
 
@@ -23,6 +18,7 @@ ChannelManager  = require('./ChannelManager')
 
 if process.env.AMQP_TEST?
   defaults.connection.reconnectDelayTime = 100
+  defaults.connection.connectTimeout     = 100
 
 
 class Connection extends EventEmitter
@@ -105,6 +101,15 @@ class Connection extends EventEmitter
         @connection.once 'connect', ()=> @_connectedFirst()
         @connection.on   'connect', ()=> @_connected()
 
+        if @connectionOptions.connectTimeout?
+          clearTimeout(@_connectTimeout)
+
+          @_connectTimeout = setTimeout ()=>
+            debug 1, ()-> return "Connection timeout triggered"
+            @close()
+            cb?({code:'T',message:'Connection Timeout'})
+          , @connectionOptions.connectTimeout
+
         @connection.on 'error', (e, r)=>
           if @state isnt 'destroyed'
             debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
@@ -147,18 +152,23 @@ class Connection extends EventEmitter
 
   # User called functions
   queue: (args, cb)->
-    if !cb? or typeof(cb) isnt 'function' then return cb("args and cb required for queue")
+    if !cb? or typeof(cb) isnt 'function'
+      return new Queue( @channelManager.temporaryChannel() , args)
 
-    @channelManager.temporaryChannel (err, channel)->
-      if err? then return cb err
-      q = new Queue(channel, args, cb)
+    else
+      @channelManager.temporaryChannel (err, channel)->
+        if err? then return cb err
+        q = new Queue(channel, args, cb)
+
 
   exchange: (args, cb)->
-    if !cb? or typeof(cb) isnt 'function' then return cb("args and cb required for exchange")
+    if !cb? or typeof(cb) isnt 'function'
+      return new Exchange(@channelManager.temporaryChannel(), args)
 
-    @channelManager.temporaryChannel (err, channel)->
-      if err? then return cb err
-      e = new Exchange(channel, args, cb)
+    else
+      @channelManager.temporaryChannel (err, channel)->
+        if err? then return cb err
+        e = new Exchange(channel, args, cb)
 
   consume: (queueName, options, messageParser, cb)->
     @channelManager.consumerChannel (err, channel)=>
@@ -209,6 +219,7 @@ class Connection extends EventEmitter
   _connected: ()->
     @_resetHeartbeatTimer()
     @_setupParser(@_reestablishChannels)
+    clearTimeout(@_connectTimeout)
 
   _reestablishChannels: ()=>
     async.forEachSeries _.keys(@channels), (channel, done)=>
@@ -435,11 +446,7 @@ class Connection extends EventEmitter
           # set our server properties up
           @serverProperties = args.serverProperties
           @_sendMethod 0, methods.connectionStartOk, {
-            clientProperties: {
-              version:    clientVersion
-              platform:   os.hostname() + '-node-' + process.version
-              product:    'node-amqp-coffee'
-            }
+            clientProperties: @connectionOptions.clientProperties
             mechanism:    'AMQPLAIN'
             response:{
               LOGIN:      @connectionOptions.login

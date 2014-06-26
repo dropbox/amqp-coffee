@@ -69,6 +69,8 @@ The `connectionOptions` argument should be an object which specifies:
 * `reconnect`: true
 * `reconnectDelayTime`: 1000 # in ms
 * `hostRandom`: false
+* `connectionTimeout: 30000 # in ms
+* `clientProperties` : {version: clientVersion, platform, product}
 
 Host Examples
 ```coffeescript

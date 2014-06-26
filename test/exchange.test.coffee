@@ -93,6 +93,28 @@ describe 'Exchange', () ->
     ], done
 
 
+  it 'test it can declare a exchange with no callback', (done)->
+    this.timeout(5000);
+    amqp = null
+    exchange = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.exchange({name:"nocallbacktesting"}).declare (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.close()
+        next()
+    ], done
+
+
+
   it 'test it can fail declaring an exchange', (done)->
     this.timeout(5000);
     amqp = null

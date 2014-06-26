@@ -1,3 +1,10 @@
+try
+  clientVersion     = JSON.parse(require('fs').readFileSync("#{__dirname}/../../../package.json")).version
+catch e
+  clientVersion = '0.0.1'
+
+os = require('os')
+
 module.exports =
   defaults :
     defaultExchangeName: ''
@@ -14,6 +21,11 @@ module.exports =
     reconnect: true
     reconnectDelayTime: 1000 # in ms
     hostRandom: false
+    connectTimeout: 30000 # in ms
+    clientProperties:
+      version:    clientVersion
+      platform:   os.hostname() + '-node-' + process.version
+      product:    'node-amqp-coffee'
 
 
   basicPublish:

@@ -153,4 +153,16 @@ describe 'Connection', () ->
     ], done
 
 
+  it 'we can timeout connecting to a host', (done)->
+
+    amqp = null
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'test.com'}, (e, r)->
+          should.exist e
+          next()
+
+    ], done
+
 
