@@ -113,6 +113,7 @@ describe 'Connection', () ->
 
 
   it 'we can reconnect to an array of hosts if the connection fails', (done)->
+    this.timeout(5000)
     proxy = new Proxy.route(9009, 5672, "localhost")
     amqp  = null
 
@@ -154,12 +155,11 @@ describe 'Connection', () ->
 
 
   it 'we can timeout connecting to a host', (done)->
-
     amqp = null
 
     async.series [
       (next)->
-        amqp = new AMQP {host:'test.com'}, (e, r)->
+        amqp = new AMQP {connectTimeout: 100, host:'test.com'}, (e, r)->
           should.exist e
           next()
 
