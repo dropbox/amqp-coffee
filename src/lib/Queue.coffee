@@ -30,7 +30,7 @@ class Queue
     if cb? then cb(null, @)
 
   declare: (args={}, cb)->
-    queueNameSpecified = args.queue?
+    queueNameSpecified = args.queue? and args.queue isnt ""
 
     if typeof args is 'function'
       cb = args
