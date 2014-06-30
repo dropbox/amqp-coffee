@@ -18,7 +18,7 @@ ChannelManager  = require('./ChannelManager')
 
 if process.env.AMQP_TEST?
   defaults.connection.reconnectDelayTime = 100
-  defaults.connection.connectTimeout     = 200
+  defaults.connection.connectTimeout     = 100
 
 
 class Connection extends EventEmitter
@@ -107,7 +107,7 @@ class Connection extends EventEmitter
           @_connectTimeout = setTimeout ()=>
             debug 1, ()-> return "Connection timeout triggered"
             @close()
-            cb?({code:'T',message:'Connection Timeout'})
+            cb?({code:'T', message:'Connection Timeout', host:@connectionOptions.host, port:@connectionOptions.port})
           , @connectionOptions.connectTimeout
 
         @connection.on 'error', (e, r)=>
@@ -217,9 +217,9 @@ class Connection extends EventEmitter
     debug 1, ()=> return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
 
   _connected: ()->
+    clearTimeout(@_connectTimeout)
     @_resetHeartbeatTimer()
     @_setupParser(@_reestablishChannels)
-    clearTimeout(@_connectTimeout)
 
   _reestablishChannels: ()=>
     async.forEachSeries _.keys(@channels), (channel, done)=>
