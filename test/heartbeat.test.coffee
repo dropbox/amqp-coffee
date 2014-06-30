@@ -7,8 +7,7 @@ AMQP = require('src/amqp')
 
 describe 'Connection Heartbeats', () ->
   it 'we can get a heartbeat 541', (done)->
-
-    # this.timeout(5000)
+    this.timeout(5000)
     amqp = null
 
     async.series [
