@@ -31,6 +31,29 @@ describe 'Queue', () ->
 
     ], done
 
+  it 'test it can declare a queue with no name 5001', (done)->
+    amqp = null
+    queue = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:''}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          next()
+
+    ], done
+
 
   it 'test it can get a queues message count 501', (done)->
     amqp = null
