@@ -101,7 +101,7 @@ if $COVERAGE; then
   # open $ROOT/coverage.html
 else
 
-  AMQP_TEST=1 NODE_PATH=$ROOT/bin $MOCHA --require 'coffee-script' --compilers coffee:coffee-script --reporter spec --ui bdd --grep "$GREP" $TESTS
+  AMQP_TEST=1 NODE_PATH=$ROOT/bin $MOCHA --require 'coffee-script' --compilers coffee:coffee-script --reporter spec --ui bdd --timeout 10000 --grep "$GREP" $TESTS
 
 fi
 
