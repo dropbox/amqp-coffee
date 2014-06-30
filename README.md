@@ -56,7 +56,9 @@ amqpConnection = new AMQP {host:'localhost'}, (e, r)->
 
 
 ## new amqp-coffee([connectionOptions],[callback])
-Creates a new amqp Connection.  The connection is returned directly and in the callback.  The connection extends EventEmitter
+Creates a new amqp Connection.  The connection is returned directly and in the callback.  The connection extends EventEmitter.
+
+The callback is called if there is a sucessful connection OR a unsucessful connection and connectionOptions.reconnect is false.  If connectionOptions.reconnect is false, you will get a error back in the callback.  If no callback is specified it will be emitted.
 
 The `connectionOptions` argument should be an object which specifies:
 * `host`: a string of the hostname OR an array of hostname strings OR an array of hostname objects {host, port}
@@ -69,7 +71,7 @@ The `connectionOptions` argument should be an object which specifies:
 * `reconnect`: true
 * `reconnectDelayTime`: 1000 # in ms
 * `hostRandom`: false
-* `connectionTimeout: 30000 # in ms
+* `connectTimeout: 30000 # in ms, this is only used if reconnect is false
 * `clientProperties` : {version: clientVersion, platform, product}
 
 Host Examples

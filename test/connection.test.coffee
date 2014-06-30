@@ -12,9 +12,14 @@ describe 'Connection', () ->
       done()
 
   it 'we fail connecting to an invalid host', (done) ->
-    amqp = new AMQP {host:'iamnotthequeueyourlookingfor'}, (e, r)->
+    amqp = new AMQP {reconnect:false, host:'iamnotthequeueyourlookingfor'}, (e, r)->
       should.exist e
       amqp.close()
+      done()
+
+  it 'we fail connecting to an invalid no callback', (done) ->
+    amqp = new AMQP {reconnect:false, host:'iamnotthequeueyourlookingfor'}
+    amqp.on 'error', ()->
       done()
 
   it 'we can reconnect if the connection fails 532', (done)->
@@ -159,7 +164,7 @@ describe 'Connection', () ->
 
     async.series [
       (next)->
-        amqp = new AMQP {connectTimeout: 100, host:'test.com'}, (e, r)->
+        amqp = new AMQP {reconnect:false, connectTimeout: 100, host:'test.com'}, (e, r)->
           should.exist e
           next()
 

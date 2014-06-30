@@ -100,7 +100,7 @@ class Connection extends EventEmitter
         @connection.once 'connect', ()=> @_connectedFirst()
         @connection.on   'connect', ()=> @_connected()
 
-        if @connectionOptions.connectTimeout?
+        if @connectionOptions.connectTimeout? and !@connectionOptions.reconnect
           clearTimeout(@_connectTimeout)
 
           @_connectTimeout = setTimeout ()=>
@@ -112,9 +112,16 @@ class Connection extends EventEmitter
         @connection.on 'error', (e, r)=>
           if @state isnt 'destroyed'
             debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
-          cb(e,r) if cb?
+
+          # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
+          if !@connectionOptions.reconnect
+            if cb?
+              cb(e,r)
+            else
+              @emit 'error', e
 
         @connection.on 'close', (had_error)=>
+          clearTimeout(@_connectTimeout)
           @emit 'close' if @state is "open"
 
           if @state isnt 'destroyed'
