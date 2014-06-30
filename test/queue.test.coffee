@@ -29,6 +29,7 @@ describe 'Queue', () ->
           should.not.exist e
           next()
 
+
     ], done
 
   it 'test it can declare a queue with no name 5001', (done)->
@@ -50,9 +51,19 @@ describe 'Queue', () ->
       (next)->
         queue.declare {passive:false}, (e,r)->
           should.not.exist e
+          should.exist r.queue
           next()
 
-    ], done
+      (next)->
+        queue.bind "amq.direct", uuid(), next
+
+      (next)->
+        queue.queueOptions.queue.should.not.eql ''
+        next()
+
+    ], (err, res)->
+      should.not.exist err
+      done()
 
 
   it 'test it can get a queues message count 501', (done)->

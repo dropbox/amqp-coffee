@@ -30,6 +30,8 @@ class Queue
     if cb? then cb(null, @)
 
   declare: (args={}, cb)->
+    queueNameSpecified = args.queue?
+
     if typeof args is 'function'
       cb = args
       args = {}
@@ -37,7 +39,10 @@ class Queue
     else
       declareOptions = _.defaults args, @queueOptions
 
-    @taskPush methods.queueDeclare, declareOptions, methods.queueDeclareOk, cb
+    @taskPush methods.queueDeclare, declareOptions, methods.queueDeclareOk, (err, res)=>
+      if !queueNameSpecified and !err? and res.queue?
+        @queueOptions.queue = res.queue
+      cb?(err, res)
 
   bind: (exchange, routingKey, queueName, cb)=>
     if typeof queueName is 'string'

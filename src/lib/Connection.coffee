@@ -18,7 +18,7 @@ ChannelManager  = require('./ChannelManager')
 
 if process.env.AMQP_TEST?
   defaults.connection.reconnectDelayTime = 100
-  defaults.connection.connectTimeout     = 100
+  defaults.connection.connectTimeout     = 200
 
 
 class Connection extends EventEmitter
