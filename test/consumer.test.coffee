@@ -354,7 +354,6 @@ describe 'Consumer', () ->
 
 
   it 'test we can consume and change prefetchCount 700', (done)->
-
     testData = {test:"message"}
     amqp = null
     queue = uuid()
@@ -400,7 +399,16 @@ describe 'Consumer', () ->
         , next
 
       (next)->
-        consumer = amqp.consume queue, {prefetchCount: 2}, messageProcessor, (e,r)->
+
+        consumerOptions = {prefetchCount: 2}
+
+        if amqp.serverProperties?.product == 'RabbitMQ' and \
+         ( amqp.serverProperties?.capabilities?.per_consumer_qos == true or \
+         amqp.serverProperties?.version == "3.3.0" )
+
+          consumerOptions.global = true
+
+        consumer = amqp.consume queue, consumerOptions, messageProcessor, (e,r)->
           should.not.exist e
           next()
 

@@ -59,9 +59,10 @@ class ChannelManager
     channel = @nextChannelNumber()
 
     @tempChannel = new TemporaryChannel @connection, channel, (err, res)=>
-      cb err, @tempChannel
+      cb?(err, @tempChannel)
 
     @channels[channel] = @tempChannel
+    return @tempChannel
 
   consumerChannel: (cb)->
     channel = @nextChannelNumber()

@@ -25,7 +25,7 @@ class Consumer extends Channel
     return @
 
   consume: (queueName, options, messageHandler, cb)->
-    @consumerTag = "#{os.hostname()}-#{process.pid}-#{Date.now()}"
+    @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
     debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel}"
     @consumerState = 'opening'
@@ -34,15 +34,10 @@ class Consumer extends Channel
       # this should be a qos channel and we should expect ack's on messages
       @qos = true
 
-      # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
-      if !options.global? and\
-          @connection.serverProperties?.product == 'RabbitMQ' and\
-          ( @connection.serverProperties?.capabilities?.per_consumer_qos == true or \
-          @connection.serverProperties?.version == "3.3.0" )
+      providedOptions = {prefetchCount: options.prefetchCount}
+      providedOptions['global'] = options.global if options.global?
 
-        options.global = true
-
-      qosOptions    = _.defaults {prefetchCount: options.prefetchCount, global: options.global}, defaults.basicQos
+      qosOptions    = _.defaults providedOptions, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
     else
@@ -76,10 +71,10 @@ class Consumer extends Channel
       cb?()
 
   pause: (cb)->
-    if @consumerState isnt 'closed' then @cancel(cb) else cb()
+    if @consumerState isnt 'closed' then @cancel(cb) else cb?()
 
   resume: (cb)->
-    if @consumerState isnt 'open' then @_consume(cb) else cb()
+    if @consumerState isnt 'open' then @_consume(cb) else cb?()
 
   flow: (active, cb)->
     if active then @resume(cb) else @pause(cb)
@@ -89,7 +84,17 @@ class Consumer extends Channel
       cb = prefetchCount
       qosOptions = @qosOptions
     else
-      qosOptions = _.defaults({prefetchCount},@qosOptions)
+      # if our prefetch count has changed and we're rabbit version > 3.3.*
+      # Rabbitmq 3.3.0 changes the behavior of qos.  we default to gloabl true in this case.
+      if prefetchCount isnt @qosOptions.prefetchCount and \
+         @connection.serverProperties?.product == 'RabbitMQ' and\
+         ( @connection.serverProperties?.capabilities?.per_consumer_qos == true or \
+         @connection.serverProperties?.version == "3.3.0" )
+
+        global = true
+
+
+      qosOptions = _.defaults({prefetchCount, global}, @qosOptions)
 
     @taskPush methods.basicQos, qosOptions, methods.basicQosOk, cb
 

@@ -29,7 +29,41 @@ describe 'Queue', () ->
           should.not.exist e
           next()
 
+
     ], done
+
+  it 'test it can declare a queue with no name 5001', (done)->
+    amqp = null
+    queue = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:''}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          should.exist r.queue
+          next()
+
+      (next)->
+        queue.bind "amq.direct", uuid(), next
+
+      (next)->
+        queue.queueOptions.queue.should.not.eql ''
+        next()
+
+    ], (err, res)->
+      should.not.exist err
+      done()
 
 
   it 'test it can get a queues message count 501', (done)->
@@ -439,6 +473,7 @@ describe 'Queue', () ->
         queue.unbind "amq.direct", "test2"
         queue.unbind "amq.direct", "test3"
         queue.unbind "amq.direct", "test4"
+        queue.unbind "amq.direct", "test4"
         _.delay next, 500
 
       (next)->
@@ -452,6 +487,55 @@ describe 'Queue', () ->
         openChannels.should.eql 1
         next()
     ], done
+
+
+
+  it 'test we can bind to a non-existing exchange and not leave channels open 2889', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName, passive:false, exclusive: true, autodelete: true}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        queue.bind "amq.direct2", "test1", ()-> next()
+      (next)->
+        queue.bind "amq.direct2", "test1", ()-> next()
+      (next)->
+        _.delay next, 100
+      (next)->
+        queue.bind "amq.direct2", "test1", ()-> next()
+      (next)->
+        queue.bind "amq.direct2", "test1", ()-> next()
+
+      (next)->
+        _.delay next, 500
+
+
+      (next)->
+        openChannels = 0
+        for channelNumber,channel of amqp.channels
+          openChannels++ if channel.state is 'open'
+        openChannels.should.eql 1
+        next()
+    ], done
+
 
 
   it 'test we can timeout a queue channel and reopen it', (done)->
@@ -536,3 +620,4 @@ describe 'Queue', () ->
           next()
 
     ], done
+

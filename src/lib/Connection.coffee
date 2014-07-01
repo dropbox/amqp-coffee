@@ -1,12 +1,7 @@
 debug               = require('./config').debug('amqp:Connection')
-try
-  clientVersion     = JSON.parse(require('fs').readFileSync("#{__dirname}/../../../package.json")).version
-catch e
-  clientVersion = '0.0.1'
 
 {EventEmitter}      = require('events')
 net                 = require('net')
-os                  = require('os')
 _                   = require('underscore')
 async               = require('async')
 
@@ -96,17 +91,34 @@ class Connection extends EventEmitter
           next()
 
       (next)=>
+        if @connection then @connection.removeAllListeners()
 
         @connection = net.connect @connectionOptions.port, @connectionOptions.host
         @connection.once 'connect', ()=> @_connectedFirst()
         @connection.on   'connect', ()=> @_connected()
 
+        if @connectionOptions.connectTimeout? and !@connectionOptions.reconnect
+          clearTimeout(@_connectTimeout)
+
+          @_connectTimeout = setTimeout ()=>
+            debug 1, ()-> return "Connection timeout triggered"
+            @close()
+            cb?({code:'T', message:'Connection Timeout', host:@connectionOptions.host, port:@connectionOptions.port})
+          , @connectionOptions.connectTimeout
+
         @connection.on 'error', (e, r)=>
           if @state isnt 'destroyed'
             debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
-          cb(e,r) if cb?
+
+          # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
+          if !@connectionOptions.reconnect
+            if cb?
+              cb(e,r)
+            else
+              @emit 'error', e
 
         @connection.on 'close', (had_error)=>
+          clearTimeout(@_connectTimeout)
           @emit 'close' if @state is "open"
 
           if @state isnt 'destroyed'
@@ -143,18 +155,23 @@ class Connection extends EventEmitter
 
   # User called functions
   queue: (args, cb)->
-    if !cb? or typeof(cb) isnt 'function' then return cb("args and cb required for queue")
+    if !cb? or typeof(cb) isnt 'function'
+      return new Queue( @channelManager.temporaryChannel() , args)
 
-    @channelManager.temporaryChannel (err, channel)->
-      if err? then return cb err
-      q = new Queue(channel, args, cb)
+    else
+      @channelManager.temporaryChannel (err, channel)->
+        if err? then return cb err
+        q = new Queue(channel, args, cb)
+
 
   exchange: (args, cb)->
-    if !cb? or typeof(cb) isnt 'function' then return cb("args and cb required for exchange")
+    if !cb? or typeof(cb) isnt 'function'
+      return new Exchange(@channelManager.temporaryChannel(), args)
 
-    @channelManager.temporaryChannel (err, channel)->
-      if err? then return cb err
-      e = new Exchange(channel, args, cb)
+    else
+      @channelManager.temporaryChannel (err, channel)->
+        if err? then return cb err
+        e = new Exchange(channel, args, cb)
 
   consume: (queueName, options, messageParser, cb)->
     @channelManager.consumerChannel (err, channel)=>
@@ -198,18 +215,20 @@ class Connection extends EventEmitter
     debug "Trying to crash connection by an oow op"
     @_sendBody @channel, new Buffer(100), {}
 
-
   # Service Called Functions
   _connectedFirst: ()=>
     debug 1, ()=> return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
 
-
   _connected: ()->
+    clearTimeout(@_connectTimeout)
     @_resetHeartbeatTimer()
-    @_setupParser ()=>
-      async.forEachSeries _.keys(@channels), (channel, done)=>
-        if channel is "0" then done() else
-          @channels[channel].reset done
+    @_setupParser(@_reestablishChannels)
+
+  _reestablishChannels: ()=>
+    async.forEachSeries _.keys(@channels), (channel, done)=>
+      if channel is "0" then done() else
+        @channels[channel].reset done
+
 
   _closed: ()=>
     @_clearHeartbeatTimer()
@@ -243,6 +262,8 @@ class Connection extends EventEmitter
     @_clearHeartbeatTimer()
 
   _setupParser: (cb)->
+    if @parser? then @parser.removeAllListeners()
+
     # setup the parser
     @parser = new AMQPParser('0-9-1', 'client', @connection)
 
@@ -256,7 +277,9 @@ class Connection extends EventEmitter
     @connection.removeAllListeners('data') # cleanup reconnections
     @connection.on 'data', (data)=> @parser.execute data
 
-    @once 'ready', cb if cb?
+    if cb?
+      @removeListener('ready', cb)
+      @once 'ready', cb
 
   _sendMethod: (channel, method, args)=>
     if channel isnt 0 and @state in ['opening', 'reconnecting']
@@ -426,11 +449,7 @@ class Connection extends EventEmitter
           # set our server properties up
           @serverProperties = args.serverProperties
           @_sendMethod 0, methods.connectionStartOk, {
-            clientProperties: {
-              version:    clientVersion
-              platform:   os.hostname() + '-node-' + process.version
-              product:    'node-amqp-coffee'
-            }
+            clientProperties: @connectionOptions.clientProperties
             mechanism:    'AMQPLAIN'
             response:{
               LOGIN:      @connectionOptions.login
