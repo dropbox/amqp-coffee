@@ -30,14 +30,8 @@ class Channel extends EventEmitter
     @queue   = async.queue(@_taskWorker, 1)
 
     @open()
-
-    # if the connection closes, make sure we reflect that because that channel is also closed
-    @connection.on 'close', ()=>
-      if @state isnt 'closed'
-        @state = 'closed'
-        @_channelClosed()
-
     @transactional = false
+
 
   temporaryChannel: ()->
     @transactional     = true # THIS IS NOT AMQP TRANSACTIONS
@@ -239,5 +233,10 @@ class Channel extends EventEmitter
       else
         @_onMethod( channel, method, args )
 
+  _connectionClosed: ()->
+    # if the connection closes, make sure we reflect that because that channel is also closed
+    if @state isnt 'closed'
+      @state = 'closed'
+      @_channelClosed()
 
 module.exports = Channel

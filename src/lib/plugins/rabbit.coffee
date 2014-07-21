@@ -11,6 +11,7 @@ module.exports =
     port  = connection.connectionOptions.port + 10000 # this is the default option, but should probably be configurable
     vhost = encodeURIComponent connection.connectionOptions.vhost
 
+    #TODO get rid of request
     request.get "http://#{host}:#{port}/api/queues/#{vhost}/#{queue}", {
       auth: {
         user: connection.connectionOptions.login
