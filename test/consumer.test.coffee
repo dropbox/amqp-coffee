@@ -74,35 +74,6 @@ describe 'Consumer', () ->
     ]
 
 
-
-  it 'test we can set up a bunch of consumes 164', (done)->
-
-    amqp = null
-    queue = uuid()
-    messageProcessor = ()->
-      # do nothing
-
-    async.series [
-      (next)->
-        amqp = new AMQP {host:'localhost'}, (e, r)->
-          should.not.exist e
-          next()
-
-      (next)->
-        amqp.queue {queue}, (e,q)->
-          q.declare ()->
-            q.bind "amq.direct", queue, next
-
-      (next)->
-        async.forEach [0...20], (i, done)->
-          amqp.consume queue, {}, messageProcessor, (e,r)->
-            should.not.exist e
-            done()
-        , next
-
-    ], done
-
-
   it 'test we can consume a queue and get a message, and keep it intact', (done)->
 
     testData = {test:"message"}

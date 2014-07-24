@@ -118,10 +118,6 @@ class Connection extends EventEmitter
               @emit 'error', e
 
         @connection.on 'close', (had_error)=>
-          # go through all of our channels and close them
-          for channelNumber, channel of @channels
-            channel._connectionClosed?()
-
           clearTimeout(@_connectTimeout)
           @emit 'close' if @state is "open"
 

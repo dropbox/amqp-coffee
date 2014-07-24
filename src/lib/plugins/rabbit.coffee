@@ -1,5 +1,5 @@
-debug = require('../config').debug('amqp:plugins:rabbit')
-http  = require('http')
+debug               = require('../config').debug('amqp:plugins:rabbit')
+request = require('request')
 
 module.exports =
   masterNode : (connection, queue, callback)->
@@ -11,54 +11,38 @@ module.exports =
     port  = connection.connectionOptions.port + 10000 # this is the default option, but should probably be configurable
     vhost = encodeURIComponent connection.connectionOptions.vhost
 
-    requestOptions = {
-      host: host
-      port: port
-      path: "/api/queues/#{vhost}/#{queue}"
-      method: 'GET'
-      headers: {
-        Host: host
-        Authorization: 'Basic ' + new Buffer(connection.connectionOptions.login + ':' + connection.connectionOptions.password).toString('base64')
+    request.get "http://#{host}:#{port}/api/queues/#{vhost}/#{queue}", {
+      auth: {
+        user: connection.connectionOptions.login
+        pass: connection.connectionOptions.password
       }
-    }
+    }, (e, r)->
+      if e? then return callback(e)
+      if r.statusCode is 404 then return callback(null, true) # if our queue doesn't exist then master node doesn't matter
 
-    req = http.request requestOptions, (res)->
-      if res.statusCode is 404 then return callback(null, true) # if our queue doesn't exist then master node doesn't matter
-      res.setEncoding('utf8')
+      try
+        response = JSON.parse r.body
+      catch e
+        response = {}
 
-      body = ""
+      if !response.node?
+        debug 1, ()-> return ["No .node in the api response,",response]
+        return callback("No response node") # if we have no node information we doesn't really know what to do here
 
-      res.on 'data', (chunk)->
-        body += chunk
+      masternode = response.node.split('@')[1] if response.node.indexOf('@') isnt -1
+      masternode = masternode.toLowerCase()
 
-      res.on 'end', ()->
-        try
-          response = JSON.parse body
-        catch e
-          response = {}
+      if connection.connectionOptions.host is masternode
+        return callback(null, true)
 
-        if !response.node?
-          debug 1, ()-> return ["No .node in the api response,",response]
-          return callback("No response node") # if we have no node information we doesn't really know what to do here
+      # connection.connectionOptions.hosts.hosts is set as toLowerCase in Connection
+      for host, i in connection.connectionOptions.hosts
 
-        masternode = response.node.split('@')[1] if response.node.indexOf('@') isnt -1
-        masternode = masternode.toLowerCase()
-
-        if connection.connectionOptions.host is masternode
+        if host.host is masternode or (host.host.indexOf('.') isnt -1 and host.host.split('.')[0] is masternode)
+          connection.connectionOptions.hosti = i
+          connection.updateConnectionOptionsHostInformation()
           return callback(null, true)
 
-        # connection.connectionOptions.hosts.hosts is set as toLowerCase in Connection
-        for host, i in connection.connectionOptions.hosts
+      debug 1, ()-> return "we can not connection to the master node, its not in our valid hosts.  Master : #{masternode} Hosts : #{JSON.stringify(connection.connectionOptions.hosts)}"
+      callback("master node isn't in our hosts")
 
-          if host.host is masternode or (host.host.indexOf('.') isnt -1 and host.host.split('.')[0] is masternode)
-            connection.connectionOptions.hosti = i
-            connection.updateConnectionOptionsHostInformation()
-            return callback(null, true)
-
-        debug 1, ()-> return "we can not connection to the master node, its not in our valid hosts.  Master : #{masternode} Hosts : #{JSON.stringify(connection.connectionOptions.hosts)}"
-        callback("master node isn't in our hosts")
-
-    req.on 'error', (e)->
-      return callback(e)
-
-    req.end()
