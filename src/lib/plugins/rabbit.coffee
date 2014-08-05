@@ -20,6 +20,7 @@ module.exports =
         Host: host
         Authorization: 'Basic ' + new Buffer(connection.connectionOptions.login + ':' + connection.connectionOptions.password).toString('base64')
       }
+      agent: false
     }
 
     req = http.request requestOptions, (res)->
