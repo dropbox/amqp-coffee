@@ -28,6 +28,7 @@ class Consumer extends Channel
     @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
     debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel}"
+
     @consumerState = 'opening'
 
     if options.prefetchCount?
@@ -116,19 +117,21 @@ class Consumer extends Channel
         next()
     ], cb
 
+
   _channelOpen: ()=>
     if @consumeOptions? and @consumerState is 'closed' then @_consume()
 
   _channelClosed: (reason)=>
-    # if we are trying to reconnect or connecting for the first time and get an error we can emit it
-    if @consumerState isnt 'open' and @consumerState isnt 'closed'
+    # if we're reconnecting it is approiate to emit the error on reconnect, this is specifically useful
+    # for auto delete queues
+    if @consumerState is 'reopening'
       if !reason? then reason = {}
       @emit 'error', reason
 
     @outstandingDeliveryTags = {}
     if @connection.state is 'open' and @consumerState is 'open'
       if @connection.state is 'open'
-        @consumerState = 'opening'
+        @consumerState = 'reopening'
         @_consume()
       else
         @consumerState = 'closed'
