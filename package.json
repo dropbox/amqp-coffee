@@ -19,14 +19,14 @@
     "bson": "0.2.3",
     "coffee-script": "1.4.0",
     "underscore": "*",
-    "mocha": "*",
     "debug": "*",
-    "node-uuid": "*",
-    "should": "*"
+    "node-uuid": "*"
   } ,
   "devDependencies":{
     "istanbul"   : "0.1.43",
-    "jscoverage" : "0.3.8"
+    "jscoverage" : "0.3.8",
+    "mocha": "*",
+    "should": "*"
   },
   "repository": {
     "type": "git",
