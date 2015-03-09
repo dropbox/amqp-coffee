@@ -16,7 +16,7 @@
   }
 , "dependencies": {
     "async": "*",
-    "bson": "0.2.3",
+    "bson": "0.2.19",
     "coffee-script": "1.4.0",
     "underscore": "*",
     "debug": "*",
