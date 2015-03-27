@@ -41,8 +41,7 @@ class Publisher extends Channel
 
     if @confirm then @confirmMode()
 
-  publish: (exchange, routingKey, data, options, cb)=>
-
+  publish: (exchange, routingKey, data, options, cb)->
     if typeof options is 'function'
       cb = options
       options = {}
@@ -101,7 +100,7 @@ class Publisher extends Channel
       cb() if cb?
 
 
-  _onMethod: (channel, method, args)=>
+  _onMethod: (channel, method, args)->
     @previousMethod = method
     @previousArgs   = args
 
@@ -111,7 +110,7 @@ class Publisher extends Channel
           # debug 4, ()=> return JSON.stringify args
           @_gotSeq args.deliveryTag, args.multiple
 
-  _onContentHeader: (channel, classInfo, weight, properties, size)=>
+  _onContentHeader: (channel, classInfo, weight, properties, size)->
     switch @previousMethod
       when methods.basicReturn
         if properties.headers?['x-seq']?
@@ -120,7 +119,7 @@ class Publisher extends Channel
   _onContent: (channel, data)->
     # Content is not needed efen on a basicReturn
 
-  _waitForSeq: (seq, cb)=>
+  _waitForSeq: (seq, cb)->
     if typeof cb is 'function'
       @seqCallbacks[seq] = cb
     else
