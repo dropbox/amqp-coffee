@@ -17,6 +17,9 @@ class Publisher extends Channel
     @seqCallbacks     = {} # publisher confirms
     @confirm          = confirm ? false
 
+    @currentMethod = null
+    @currentArgs   = null
+
     if @confirm then @confirmMode()
     return @
 
@@ -101,8 +104,8 @@ class Publisher extends Channel
 
 
   _onMethod: (channel, method, args)->
-    @previousMethod = method
-    @previousArgs   = args
+    @currentMethod = method
+    @currentArgs   = args
 
     switch method
       when methods.basicAck
@@ -111,10 +114,10 @@ class Publisher extends Channel
           @_gotSeq args.deliveryTag, args.multiple
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->
-    switch @previousMethod
+    switch @currentMethod
       when methods.basicReturn
         if properties.headers?['x-seq']?
-          @_gotSeq properties.headers['x-seq'], false, @previousArgs
+          @_gotSeq properties.headers['x-seq'], false, @currentArgs
 
   _onContent: (channel, data)->
     # Content is not needed efen on a basicReturn
