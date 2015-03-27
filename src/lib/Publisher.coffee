@@ -86,6 +86,10 @@ class Publisher extends Channel
     options.exchange   = exchange
     options.routingKey = routingKey
 
+    # This is to tie back this message as failed if it failed in confirm mode with a mandatory or immediate publish
+    if @confirm and cb? and (options.mandatory || options.immediate )
+      options.headers ?= {}
+      options.headers['x-seq'] = thisSequenceNumber
 
     @queuePublish methods.basicPublish, data, options
 
@@ -97,13 +101,24 @@ class Publisher extends Channel
       cb() if cb?
 
 
-  _onMethod: (channel, method, args)->
+  _onMethod: (channel, method, args)=>
+    @previousMethod = method
+    @previousArgs   = args
+
     switch method
       when methods.basicAck
         if @confirm
-
           # debug 4, ()=> return JSON.stringify args
           @_gotSeq args.deliveryTag, args.multiple
+
+  _onContentHeader: (channel, classInfo, weight, properties, size)=>
+    switch @previousMethod
+      when methods.basicReturn
+        if properties.headers?['x-seq']?
+          @_gotSeq properties.headers['x-seq'], false, @previousArgs
+
+  _onContent: (channel, data)->
+    # Content is not needed efen on a basicReturn
 
   _waitForSeq: (seq, cb)=>
     if typeof cb is 'function'
@@ -112,18 +127,18 @@ class Publisher extends Channel
       debug "callback requested for publish that isn't a function"
       console.error cb
 
-  _gotSeq:(seq, multi)->
+  _gotSeq:(seq, multi, err = null)->
     if multi
       keys = _.keys @seqCallbacks
       for key in keys
         if key <= seq
-          @seqCallbacks[key]()
+          @seqCallbacks[key](err)
           delete @seqCallbacks[key]
     else
       if @seqCallbacks[seq]?
-        @seqCallbacks[seq]()
+        @seqCallbacks[seq](err)
       else
-        debug 1, ()-> return "got a seq for #{seq} but that callback either doesn't exist or was already called"
+        debug 3, ()-> return "got a seq for #{seq} but that callback either doesn't exist or was already called or was returned"
 
       delete @seqCallbacks[seq]
 

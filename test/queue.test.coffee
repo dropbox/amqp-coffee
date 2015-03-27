@@ -621,3 +621,32 @@ describe 'Queue', () ->
 
     ], done
 
+
+
+  it 'test we get a error on a bad bind', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+    channel = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        channel = amqp.queue {queue:queueName}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+
+      (next)->
+        queue.bind "amq.direct", "testing", (e,r)->
+          should.exist e
+          e.replyCode.should.eql 404
+          next()
+
+    ], done
+
