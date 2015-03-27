@@ -17,6 +17,9 @@ class Publisher extends Channel
     @seqCallbacks     = {} # publisher confirms
     @confirm          = confirm ? false
 
+    @currentMethod = null
+    @currentArgs   = null
+
     if @confirm then @confirmMode()
     return @
 
@@ -41,8 +44,7 @@ class Publisher extends Channel
 
     if @confirm then @confirmMode()
 
-  publish: (exchange, routingKey, data, options, cb)=>
-
+  publish: (exchange, routingKey, data, options, cb)->
     if typeof options is 'function'
       cb = options
       options = {}
@@ -86,6 +88,10 @@ class Publisher extends Channel
     options.exchange   = exchange
     options.routingKey = routingKey
 
+    # This is to tie back this message as failed if it failed in confirm mode with a mandatory or immediate publish
+    if @confirm and cb? and (options.mandatory || options.immediate )
+      options.headers ?= {}
+      options.headers['x-seq'] = thisSequenceNumber
 
     @queuePublish methods.basicPublish, data, options
 
@@ -98,32 +104,43 @@ class Publisher extends Channel
 
 
   _onMethod: (channel, method, args)->
+    @currentMethod = method
+    @currentArgs   = args
+
     switch method
       when methods.basicAck
         if @confirm
-
           # debug 4, ()=> return JSON.stringify args
           @_gotSeq args.deliveryTag, args.multiple
 
-  _waitForSeq: (seq, cb)=>
+  _onContentHeader: (channel, classInfo, weight, properties, size)->
+    switch @currentMethod
+      when methods.basicReturn
+        if properties.headers?['x-seq']?
+          @_gotSeq properties.headers['x-seq'], false, @currentArgs
+
+  _onContent: (channel, data)->
+    # Content is not needed efen on a basicReturn
+
+  _waitForSeq: (seq, cb)->
     if typeof cb is 'function'
       @seqCallbacks[seq] = cb
     else
       debug "callback requested for publish that isn't a function"
       console.error cb
 
-  _gotSeq:(seq, multi)->
+  _gotSeq:(seq, multi, err = null)->
     if multi
       keys = _.keys @seqCallbacks
       for key in keys
         if key <= seq
-          @seqCallbacks[key]()
+          @seqCallbacks[key](err)
           delete @seqCallbacks[key]
     else
       if @seqCallbacks[seq]?
-        @seqCallbacks[seq]()
+        @seqCallbacks[seq](err)
       else
-        debug 1, ()-> return "got a seq for #{seq} but that callback either doesn't exist or was already called"
+        debug 3, ()-> return "got a seq for #{seq} but that callback either doesn't exist or was already called or was returned"
 
       delete @seqCallbacks[seq]
 

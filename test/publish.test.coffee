@@ -255,7 +255,7 @@ describe 'Publisher', () ->
 
 
 
-  it 'test we can publish a mandatory message to a invalid route and not crash', (done)->
+  it 'test we can publish a mandatory message to a invalid route and not crash 188', (done)->
     amqp = null
     queue = null
     async.series [
@@ -266,10 +266,52 @@ describe 'Publisher', () ->
 
       (next)->
         amqp.publish "amq.direct", "idontExist", new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
-          should.not.exist e
+          should.exist e
+          e.replyCode.should.eql 312
           next()
 
     ], done
+
+
+  it 'test we can publish many mandatory messages to a some invalid routes 189', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName}, (err, queue)->
+          queue.declare()
+          queue.bind 'amq.direct', queueName, next
+
+      (next)->
+        async.parallel [
+
+          (next)->
+            async.forEachSeries [0...100], (i, next)->
+              amqp.publish "amq.direct", "idontExist", new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
+                should.exist e
+                e.replyCode.should.eql 312
+                next()
+            ,next
+
+          (next)->
+            async.forEachSeries [0...100], (i, next)->
+              amqp.publish "amq.direct", queueName, new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
+                should.not.exist e
+                next()
+            ,next
+
+        ], next
+
+
+    ], done
+
 
   it 'test when be publishing and an out of order op happens we recover', (done)->
     this.timeout(10000)
