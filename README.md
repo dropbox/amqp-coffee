@@ -189,7 +189,9 @@ The `exchangeDeleteOptions` argument should be an object which specifies:
 
 ### connection.publish(exchange, routingKey, data, [publishOptions], [callback])
 
-amqp-coffee manages publisher channels and sets them up on the first publish.  A separate channel is used for confirm channels, compared to non confirm channels.  So you should have a maximum of 2 channels publishing for a single connection.
+amqp-coffee manages publisher channels and sets them up on the first publish.  Confirming is a state a channel must be put in, so a channel is needed for confimed publishes and one for non confimed publishes.  They are only created on demand.  So you should have a maximum of 2 channels publishing for a single connection.
+
+New in 0.1.20 if you set the mandatory or immediate flag with the confirm flag we add a tracking header on that message headers.x-seq which is a numeric representation of that message just like the sequence number.  That flag is used to re-connect a messages that has failed publishing and come back as a "basicReturn" to a already existing callback.  This allows you to publish to a queue that may not exist and get a bounce if it doesnt.  Or if a queue is in a bad state the message will fail routing and come back.
 
 * `exchange`: string of the exchange to publish to
 * `routingKey`: string to use to route the message
@@ -199,6 +201,8 @@ amqp-coffee manages publisher channels and sets them up on the first publish.  A
   * `mandatory`: false
   * `immediate`: false
   * `contentType`: 'application/octet-stream'
+
+
 
 ### connection.consume(queueName, options, messageListener, [callback])
 
