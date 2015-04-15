@@ -119,3 +119,56 @@ describe 'Connection Heartbeats', () ->
     ], done
 
 
+
+  it 'we send heartbeats 575', (done)->
+    this.timeout(7000)
+    amqp = null
+    consumer = null
+    queueName = null
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+
+        amqp.once 'ready', next
+
+      (next)->
+        consumer = new AMQP {host:'localhost', heartbeat: 1000}, (e, r)->
+          should.not.exist e
+
+        consumer.once 'ready', next
+
+      (next)->
+        amqp.queue {queue: ''}, (err, queueInfo)->
+          should.not.exist err
+
+          queueInfo.declare (err, queueInfo)->
+            should.not.exist err
+            queueName = queueInfo.queue
+            next()
+
+      (next)->
+
+        consumer.consume queueName, {}, ()->
+
+        shouldStop = false
+
+        setTimeout ()->
+          shouldStop = true
+        , 4000
+
+        async.until ()->
+          return shouldStop
+        , (done)->
+          amqp.publish '', queueName, 'message', done
+        , next
+
+      (next)->
+        amqp.close()
+        consumer.close()
+        next()
+
+    ], done
+
+
