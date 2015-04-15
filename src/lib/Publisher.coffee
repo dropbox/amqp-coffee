@@ -100,7 +100,7 @@ class Publisher extends Channel
       @_waitForSeq thisSequenceNumber, cb
     else
       debug 4, ()=> return JSON.stringify {exchange, routingKey, data, options, noConfirm: true}
-      cb() if cb?
+      _.defer(cb) if cb?
 
 
   _onMethod: (channel, method, args)->

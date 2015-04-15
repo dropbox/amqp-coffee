@@ -15,7 +15,7 @@ defaults  = require('./defaults')
 class Consumer extends Channel
 
   constructor: (connection, channel)->
-    debug 2, ()=>return "channel open for consumer #{channel} #{@consumerTag}"
+    debug 2, ()=>return "channel open for consumer #{channel}"
     super(connection, channel)
     @consumerState = 'closed'
     @messageHandler  = null
@@ -27,7 +27,7 @@ class Consumer extends Channel
   consume: (queueName, options, messageHandler, cb)->
     @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
-    debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel}"
+    debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel} #{@consumerTag}"
 
     @consumerState = 'opening'
 
