@@ -132,6 +132,10 @@ class Channel extends EventEmitter
   taskPush: ( method, args, okMethod, cb)=> # same as queueSendMethod
     @queue.push {type: 'method', method, args, okMethod, cb}
 
+  taskQueuePushRaw: (task, cb)=>
+    task.cb = cb if cb? and task?
+    @queue.push task
+
   queueSendMethod: (method, args, okMethod, cb)=>
     @queue.push {type: 'method', method, args, okMethod, cb}
 
@@ -140,8 +144,8 @@ class Channel extends EventEmitter
 
   _taskWorker: (task, done)=>
     if @transactional then @lastChannelAccess = Date.now()
+    {type, method, okMethod, args, cb, data, options, preflight} = task
 
-    {type, method, okMethod, args, cb, data, options} = task
 
     doneFn = (err, res)->
       cb(err, res) if cb?
@@ -152,6 +156,9 @@ class Channel extends EventEmitter
         OVERFLOW_PROTECTION++
         done()
 
+    # if preflight is false do not proceed
+    if preflight? and !preflight()
+      return doneFn('preflight check failed')
 
     if @state is 'closed' and @connection.state is 'open'
       debug 1, ()->return "Channel reassign"

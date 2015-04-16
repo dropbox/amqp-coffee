@@ -169,6 +169,61 @@ describe 'Queue', () ->
 
 
 
+  it 'test it can get a queues consumer count with connection trouble 502', (done)->
+
+    thisproxy = new proxy.route(7008, 5672, "localhost")
+
+    amqp = null
+    queue = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', port:7008, heartbeat: 1000}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:"testing"}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        queue.bind "amq.direct", "testing", (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        queue.consumerCount (err, res)->
+          res.should.eql 0
+          thisproxy.interrupt()
+          next()
+
+      (next)->
+        processor = ()->
+          # i do nothing :)
+        amqp.consume "testing", {} , processor, next
+
+      (next)->
+        queue.consumerCount (err, res)->
+          res.should.eql 1
+          next()
+
+      (next)->
+        queue.delete(next)
+
+      (next)->
+        amqp.close()
+        thisproxy.close()
+        next()
+
+    ], done
+
 
   it 'test it can declare a queue while its trying to close a temp channel 632', (done)->
     amqp = null

@@ -110,13 +110,15 @@ class Consumer extends Channel
           next()
 
       (next)=>
-        @taskPush methods.basicConsume, @consumeOptions, methods.basicConsumeOk, next
+        @taskQueuePushRaw {type: 'method', method: methods.basicConsume, args: @consumeOptions, okMethod: methods.basicConsumeOk, preflight: @_basicConsumePreflight}, next
 
       (next)=>
         @consumerState = 'open'
         next()
     ], cb
 
+  _basicConsumePreflight: ()=>
+    return @consumerState != 'open'
 
   _channelOpen: ()=>
     if @consumeOptions? and @consumerState is 'closed' then @_consume()
