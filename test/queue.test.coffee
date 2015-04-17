@@ -169,7 +169,7 @@ describe 'Queue', () ->
 
 
 
-  it 'test it can get a queues consumer count with connection trouble 502', (done)->
+  it 'test it can get a queues consumer count with connection trouble 503', (done)->
 
     thisproxy = new proxy.route(7008, 5672, "localhost")
 
@@ -212,6 +212,64 @@ describe 'Queue', () ->
       (next)->
         queue.consumerCount (err, res)->
           res.should.eql 1
+          next()
+
+      (next)->
+        queue.delete(next)
+
+      (next)->
+        amqp.close()
+        thisproxy.close()
+        next()
+
+    ], done
+
+
+
+  it 'test it can get a queues consumer count with connection trouble 504', (done)->
+    this.timeout(5000)
+    thisproxy = new proxy.route(7008, 5672, "localhost")
+
+    amqp = null
+    queue = null
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', port:7008, heartbeat: 30000}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:"testing", autoDelete: false, durable: true}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        queue.bind "amq.direct", "testing", (e,r)->
+          should.not.exist e
+
+          thisproxy.close()
+          next()
+
+      (next)->
+        queue.consumerCount (err, res)->
+          should.exist err
+          thisproxy.interrupt()
+          next()
+
+        _.delay ()->
+          thisproxy.listen()
+        , 1000
+
+      (next)->
+        queue.consumerCount (err, res)->
+          res.should.eql 0
           next()
 
       (next)->

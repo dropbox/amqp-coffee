@@ -81,4 +81,7 @@ class ChannelManager
   channelClosed: (channelNumber)->
     delete @channels[channelNumber]
 
+  isChannelClosed: (channelNumber)->
+    return !@channels.hasOwnProperty(channelNumber)
+
 module.exports = ChannelManager

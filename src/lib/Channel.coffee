@@ -37,13 +37,14 @@ class Channel extends EventEmitter
     @transactional     = true # THIS IS NOT AMQP TRANSACTIONS
     @lastChannelAccess = Date.now()
 
-    @channelTracker = setInterval ()=>
-      if @lastChannelAccess < (Date.now() - CHANNEL_TIMEOUT)
-        debug 4, ()->return "Closing channel due to inactivity"
-        @close(true)
-    , CHANNEL_CHECK
+    if !@channelTracker?
+      @channelTracker = setInterval ()=>
+        if @lastChannelAccess < (Date.now() - CHANNEL_TIMEOUT)
+          debug 4, ()->return "Closing channel due to inactivity"
+          @close(true)
+      , CHANNEL_CHECK
 
-  open: (cb)=>
+  open: (cb)->
     if @state is "closed"
       @state = 'opening'
 
@@ -59,7 +60,7 @@ class Channel extends EventEmitter
 
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
     # or we're within our acceptable time window for this queue
-    if @state is 'closed' and (!@transactional or (@transactional and @lastChannelAccess > (Date.now() - CHANNEL_TIMEOUT)))
+    if @state is 'closed' and (!@transactional or @listeners('open').length > 0 or (@transactional and @lastChannelAccess > (Date.now() - CHANNEL_TIMEOUT)))
       debug 1, ()->return "State is closed... reconnecting"
 
       async.series [
@@ -88,6 +89,7 @@ class Channel extends EventEmitter
     if !auto? or !auto then debug 1, ()->return "User requested channel close"
 
     clearInterval(@channelTracker)
+    @channelTracker = null
 
     if @state is 'open'
       @state = 'closed'
@@ -146,7 +148,6 @@ class Channel extends EventEmitter
     if @transactional then @lastChannelAccess = Date.now()
     {type, method, okMethod, args, cb, data, options, preflight} = task
 
-
     doneFn = (err, res)->
       cb(err, res) if cb?
       if OVERFLOW_PROTECTION > 100
@@ -172,6 +173,8 @@ class Channel extends EventEmitter
         doneFn("Connection is destroyed")
 
       else
+        if @connection.channelManager.isChannelClosed(@channel)
+          @connection.channelManager.channelReassign(@)
         @once 'open', ()=>
           @_taskWorker(task, done)
 
@@ -192,13 +195,15 @@ class Channel extends EventEmitter
 
 
   _callOutstadingCallbacks: (message)=>
+    outStandingCallbacks = @waitingCallbacks
+    @waitingCallbacks    = {}
+
     if !message? then message = "Channel Unavaliable"
-    for key, cbs of @waitingCallbacks
+    for key, cbs of outStandingCallbacks
       for cb in cbs
         if typeof cb is 'function'
           cb(message)
 
-    @waitingCallbacks = {}
 
   # incomming channel messages for us
   _onChannelMethod: (channel, method, args )->
