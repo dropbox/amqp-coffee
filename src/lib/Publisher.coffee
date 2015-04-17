@@ -61,9 +61,6 @@ class Publisher extends Channel
       else
         return cb("Channel is closed and will not re-open? #{@state} #{@confirm} #{@confirmState}") if cb
 
-    thisSequenceNumber = @seq++ if @confirm
-
-
     # data must be a buffer
     if typeof data is 'string'
       options.contentType = 'string/utf8'
@@ -82,6 +79,9 @@ class Publisher extends Channel
 
       # data = BSON.serialize data
       # options.contentType = 'application/bson'
+
+    # increment this as the final step before publishing, to make sure we're in sync with the server
+    thisSequenceNumber = @seq++ if @confirm
 
     # Apply default options after we deal with potentially converting the data
     options            = _.defaults options, defaults.basicPublish
@@ -120,7 +120,7 @@ class Publisher extends Channel
           @_gotSeq properties.headers['x-seq'], false, @currentArgs
 
   _onContent: (channel, data)->
-    # Content is not needed efen on a basicReturn
+    # Content is not needed on a basicReturn
 
   _waitForSeq: (seq, cb)->
     if typeof cb is 'function'
