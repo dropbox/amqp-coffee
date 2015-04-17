@@ -2,6 +2,7 @@
 // (http://delog.wordpress.com/2011/04/08/a-simple-tcp-proxy-in-node-js/)
 
 var net = require('net');
+var debug = require('debug')('proxy');
 
 process.on("uncaughtException", function(e) {
   console.log(e);
@@ -12,21 +13,21 @@ module.exports.route = function (proxyPort, servicePort, serviceHost) {
   proxyRoute.proxyPort = proxyPort || 9001;
   var servicePort = servicePort || 5672;
   var serviceHost = serviceHost || '127.0.0.1';
-  
+
   proxyRoute.operational = true;
   proxyRoute.serviceSockets = [];
   proxyRoute.proxySockets = [];
-  
+
   proxyRoute.server = net.createServer(function (proxySocket) {
     // If we're "experiencing trouble", immediately end the connection.
     if (!proxyRoute.operational) {
       proxySocket.end();
       return;
     }
-    
+
     // If we're operating normally, accept the connection and begin proxying traffic.
     proxyRoute.proxySockets.push(proxySocket);
-    
+
     var connected = false;
     var buffers = [];
     var serviceSocket = new net.Socket();
@@ -43,7 +44,7 @@ module.exports.route = function (proxyPort, servicePort, serviceHost) {
       serviceSocket.end();
     });
     serviceSocket.on('error', function (e) {
-      console.log('Could not connect to service at host ' + serviceHost + ', port ' + servicePort);
+      debug('Could not connect to service at host ' + serviceHost + ', port ' + servicePort);
       proxySocket.end();
     });
     proxySocket.on("data", function (data) {
@@ -71,11 +72,13 @@ module.exports.route = function (proxyPort, servicePort, serviceHost) {
 };
 module.exports.route.prototype.listen = function () {
   var proxyRoute = this;
+  debug('listening for proxy connection...');
   proxyRoute.operational = true;
   proxyRoute.server.listen(proxyRoute.proxyPort);
 };
 module.exports.route.prototype.close = function () {
   var proxyRoute = this;
+  debug('closing proxy connection...');
   proxyRoute.operational = false;
   for (var index in proxyRoute.serviceSockets) {
     proxyRoute.serviceSockets[index].destroy();
@@ -89,7 +92,7 @@ module.exports.route.prototype.close = function () {
 };
 module.exports.route.prototype.interrupt = function (howLong) {
   var proxyRoute = this;
-  console.log('interrupting proxy connection...');
+  debug('interrupting proxy connection...');
   proxyRoute.close();
   setTimeout(function () {
     proxyRoute.listen();
