@@ -225,7 +225,7 @@ class Connection extends EventEmitter
 
   _connected: ()->
     clearTimeout(@_connectTimeout)
-    @_resetHeartbeatTimer()
+    @_resetAllHeartbeatTimers()
     @_setupParser(@_reestablishChannels)
 
   _reestablishChannels: ()=>
@@ -243,9 +243,13 @@ class Connection extends EventEmitter
   # on initial connection we should start expecting heart beats
   # on disconnect or close we should stop expecting these.
   # on heartbeat recieved we should expect another
-  _heartbeat: ()=>
+  _receivedHeartbeat: ()=>
     debug 4, ()=> return "♥ heartbeat"
     @connection.write HeartbeatFrame
+    @_resetAllHeartbeatTimers()
+
+  _resetAllHeartbeatTimers: ()=>
+    @_resetSendHeartbeatTimer()
     @_resetHeartbeatTimer()
 
   _resetHeartbeatTimer: ()=>
@@ -256,6 +260,17 @@ class Connection extends EventEmitter
   _clearHeartbeatTimer: ()=>
     debug 6, ()=> return "_clearHeartbeatTimer"
     clearInterval @heartbeatTimer
+    clearInterval @sendHeartbeatTimer
+    @heartbeatTimer = null
+    @sendHeartbeatTimer = null
+
+  _resetSendHeartbeatTimer: ()=>
+    debug 6, ()=> return "_resetSendHeartbeatTimer"
+    clearInterval  @sendHeartbeatTimer
+    @sendHeartbeatTimer = setInterval(@_sendHeartbeat, @connectionOptions.heartbeat)
+
+  _sendHeartbeat: ()=>
+    @connection.write HeartbeatFrame
 
   # called directly in tests to simulate missed heartbeat
   _missedHeartbeat: ()=>
@@ -274,7 +289,7 @@ class Connection extends EventEmitter
     @parser.on 'method',         @_onMethod
     @parser.on 'contentHeader',  @_onContentHeader
     @parser.on 'content',        @_onContent
-    @parser.on 'heartbeat',      @_heartbeat
+    @parser.on 'heartbeat',      @_receivedHeartbeat
 
     # network --> parser
     # send any connection data events to our parser
@@ -291,7 +306,7 @@ class Connection extends EventEmitter
         @_sendMethod(channel, method, args)
 
 
-    debug 3, ()-> return "#{channel} < #{method.name} #{JSON.stringify args}"
+    debug 3, ()-> return "#{channel} < #{method.name}"# #{util.inspect args}"
     b = @sendBuffer
 
     b.used = 0
@@ -322,10 +337,11 @@ class Connection extends EventEmitter
     methodBuffer = new Buffer(b.used)
     b.copy(methodBuffer,0 ,0 ,b.used)
     @connection.write(methodBuffer)
+    @_resetSendHeartbeatTimer()
 
   # Only used in sendBody
   _sendHeader: (channel, size, args)=>
-    debug 3, ()=> return "#{@id} #{channel} < header #{size} #{JSON.stringify args}"
+    debug 3, ()=> return "#{@id} #{channel} < header #{size}"# #{util.inspect args}"
     b = @sendBuffer
 
     classInfo = classes[60]
@@ -385,6 +401,7 @@ class Connection extends EventEmitter
     headerBuffer = new Buffer(b.used)
     b.copy(headerBuffer,0 ,0 ,b.used)
     @connection.write(headerBuffer)
+    @_resetSendHeartbeatTimer()
 
   _sendBody: (channel, body, args, cb)=>
     if body instanceof Buffer
@@ -405,6 +422,7 @@ class Connection extends EventEmitter
         @connection.write(h)
         @connection.write(body.slice(offset,offset+length))
         @connection.write(EndFrame)
+        @_resetSendHeartbeatTimer()
 
         offset += MaxFrameBuffer
 

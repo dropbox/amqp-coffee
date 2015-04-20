@@ -83,7 +83,12 @@ class Queue
     declareOptions = _.defaults args, @queueOptions
 
     @declare declareOptions, (err, res)->
-      cb(err, res.messageCount)
+      return cb(err) if err?
+      if res?.messageCount?
+        cb(null, res.messageCount)
+      else
+        cb('messageCount not returned')
+
 
   consumerCount: (args={}, cb)->
     if typeof args is 'function'
@@ -93,7 +98,11 @@ class Queue
     declareOptions = _.defaults args, @queueOptions
 
     @declare declareOptions, (err, res)->
-      cb(err, res.consumerCount)
+      return cb(err) if err?
+      if res?.consumerCount?
+        cb(null, res.consumerCount)
+      else
+        cb('consumerCount not returned')
 
   delete: (args={}, cb)=>
     if typeof args is 'function'
