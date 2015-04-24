@@ -245,8 +245,7 @@ class Connection extends EventEmitter
   # on heartbeat recieved we should expect another
   _receivedHeartbeat: ()=>
     debug 4, ()=> return "♥ heartbeat"
-    @connection.write HeartbeatFrame
-    @_resetAllHeartbeatTimers()
+    @_resetHeartbeatTimer()
 
   _resetAllHeartbeatTimers: ()=>
     @_resetSendHeartbeatTimer()
