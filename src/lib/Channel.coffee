@@ -201,8 +201,7 @@ class Channel extends EventEmitter
     if !message? then message = "Channel Unavaliable"
     for key, cbs of outStandingCallbacks
       for cb in cbs
-        if typeof cb is 'function'
-          cb(message)
+        cb?(message)
 
 
   # incomming channel messages for us
