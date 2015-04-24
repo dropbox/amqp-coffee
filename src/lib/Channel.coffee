@@ -56,7 +56,7 @@ class Channel extends EventEmitter
       cb("state isn't closed.  not opening channel") if cb?
 
   reset: (cb)=>
-    @_callOutstadingCallbacks("Channel Opening or Reseting")
+    @_callOutstandingCallbacks("Channel Opening or Reseting")
 
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
     # or we're within our acceptable time window for this queue
@@ -194,7 +194,7 @@ class Channel extends EventEmitter
         throw new Error("a task was queue with an unknown type of #{type}")
 
 
-  _callOutstadingCallbacks: (message)=>
+  _callOutstandingCallbacks: (message)=>
     outStandingCallbacks = @waitingCallbacks
     @waitingCallbacks    = {}
 
@@ -220,7 +220,7 @@ class Channel extends EventEmitter
         @state = 'closed'
 
         @_channelClosed("Channel closed")
-        @_callOutstadingCallbacks({msg: "Channel closed"})
+        @_callOutstandingCallbacks({msg: "Channel closed"})
 
       when methods.channelClose
         @connection.channelManager.channelClosed(channel)
@@ -233,7 +233,7 @@ class Channel extends EventEmitter
           @callbackForMethod(methods["#{closingMethod}Ok"])(args) #this would be the error
 
         @_channelClosed({msg: "Server closed channel", error: args})
-        @_callOutstadingCallbacks("Channel closed by server #{JSON.stringify args}")
+        @_callOutstandingCallbacks("Channel closed by server #{JSON.stringify args}")
 
       when methods.channelOpenOk
         @state = 'open'
