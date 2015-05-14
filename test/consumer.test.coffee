@@ -9,7 +9,7 @@ AMQP = require('src/amqp')
 
 {BSON} = require('bson').BSONPure
 
-{ MaxFrameBuffer, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
+{ MaxFrameSize, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
 describe 'Consumer', () ->
   this.timeout(10000)
@@ -232,9 +232,9 @@ describe 'Consumer', () ->
 
 
 
-  it 'test we can consume a queue and get a big message', (done)->
+  it 'test we can consume a queue and get a big message 588', (done)->
 
-    testData = new Buffer(MaxFrameBuffer*3.5)
+    testData = new Buffer(MaxFrameSize*3.5)
     amqp = null
     queue = uuid()
 
@@ -305,7 +305,7 @@ describe 'Consumer', () ->
       should.not.exist e
 
   it 'test we can consume a queue and get a JSON big message', (done)->
-    t = new Buffer(MaxFrameBuffer*3.5)
+    t = new Buffer(MaxFrameSize*3.5)
     testData = {t: t.toString()}
     amqp = null
     queue = uuid()
@@ -337,7 +337,7 @@ describe 'Consumer', () ->
 
 
   it 'test we can consume a queue and get a BSON big message 142', (done)->
-    t = new Buffer(MaxFrameBuffer*3.5)
+    t = new Buffer(MaxFrameSize*3.5)
     testData = {t: t.toString()}
     amqp = null
     queue = uuid()
