@@ -7,7 +7,7 @@ async               = require('async')
 
 defaults                                                  = require('./defaults')
 { methodTable, classes, methods }                         = require('./config').protocol
-{ MaxFrameBuffer, FrameType, HeartbeatFrame, EndFrame }   = require('./config').constants
+{ FrameType, HeartbeatFrame, EndFrame }   = require('./config').constants
 { serializeInt, serializeFields }                         = require('./serializationHelpers')
 
 Queue           = require('./Queue')
@@ -52,7 +52,11 @@ class Connection extends EventEmitter
     @queues     = {}
     @exchanges  = {}
 
-    @sendBuffer = new Buffer(MaxFrameBuffer)
+    # connection tuning paramaters
+    @channelMax = @connectionOptions.channelMax
+    @frameMax   = @connectionOptions.frameMax
+
+    @sendBuffer = new Buffer(@frameMax)
 
     @channelManager = new ChannelManager(@)
 
@@ -409,7 +413,7 @@ class Connection extends EventEmitter
       offset = 0
       while offset < body.length
 
-        length = Math.min((body.length - offset), MaxFrameBuffer)
+        length = Math.min((body.length - offset), @frameMax)
         h      = new Buffer(7)
         h.used = 0
 
@@ -423,7 +427,7 @@ class Connection extends EventEmitter
         @connection.write(EndFrame)
         @_resetSendHeartbeatTimer()
 
-        offset += MaxFrameBuffer
+        offset += @frameMax
 
       cb?()
       return true
@@ -479,9 +483,16 @@ class Connection extends EventEmitter
             locale: 'en_US'
           }
         when methods.connectionTune
+          if args.channelMax? and args.channelMax isnt 0 and args.channelMax < @channelMax or @channelMax is 0
+            @channelMax = args.channelMax
+
+          if args.frameMax? and args.frameMax < @frameMax
+            @frameMax = args.frameMax
+            @sendBuffer = new Buffer(@frameMax)
+
           @_sendMethod 0, methods.connectionTuneOk, {
-            channelMax: 0
-            frameMax: MaxFrameBuffer
+            channelMax: @channelMax
+            frameMax: @frameMax
             heartbeat: @connectionOptions.heartbeat / 1000
           }
 

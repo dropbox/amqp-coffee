@@ -54,7 +54,9 @@ class ChannelManager
       cb(null, pool[i].channel)
 
   temporaryChannel: (cb)=>
-    if @tempChannel? then return cb null, @tempChannel
+    if @tempChannel?
+      cb?(null, @tempChannel)
+      return @tempChannel
 
     channel = @nextChannelNumber()
 

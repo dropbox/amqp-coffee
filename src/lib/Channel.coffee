@@ -50,6 +50,7 @@ class Channel extends EventEmitter
 
       @waitForMethod(methods.channelOpenOk, cb) if cb?
       @connection._sendMethod(@channel, methods.channelOpen, {})
+      @connection.channelCount++
 
       if @transactional then @temporaryChannel()
     else
@@ -92,6 +93,7 @@ class Channel extends EventEmitter
     @channelTracker = null
 
     if @state is 'open'
+      @connection.channelCount--
       @state = 'closed'
       @connection._sendMethod @channel, methods.channelClose, {
         replyText : 'Goodbye'

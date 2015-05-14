@@ -3,6 +3,8 @@ try
 catch e
   clientVersion = '0.0.1'
 
+{ MaxFrameSize } = require('./constants')
+
 os = require('os')
 
 module.exports =
@@ -22,6 +24,8 @@ module.exports =
     reconnectDelayTime: 1000 # in ms
     hostRandom: false
     connectTimeout: 30000 # in ms
+    channelMax: 0 # unlimited
+    frameMax: MaxFrameSize
     clientProperties:
       version:    clientVersion
       platform:   os.hostname() + '-node-' + process.version
