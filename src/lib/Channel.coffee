@@ -50,13 +50,14 @@ class Channel extends EventEmitter
 
       @waitForMethod(methods.channelOpenOk, cb) if cb?
       @connection._sendMethod(@channel, methods.channelOpen, {})
+      @connection.channelCount++
 
       if @transactional then @temporaryChannel()
     else
       cb("state isn't closed.  not opening channel") if cb?
 
   reset: (cb)=>
-    @_callOutstadingCallbacks("Channel Opening or Reseting")
+    @_callOutstandingCallbacks("Channel Opening or Reseting")
 
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
     # or we're within our acceptable time window for this queue
@@ -92,6 +93,7 @@ class Channel extends EventEmitter
     @channelTracker = null
 
     if @state is 'open'
+      @connection.channelCount--
       @state = 'closed'
       @connection._sendMethod @channel, methods.channelClose, {
         replyText : 'Goodbye'
@@ -194,15 +196,14 @@ class Channel extends EventEmitter
         throw new Error("a task was queue with an unknown type of #{type}")
 
 
-  _callOutstadingCallbacks: (message)=>
+  _callOutstandingCallbacks: (message)=>
     outStandingCallbacks = @waitingCallbacks
     @waitingCallbacks    = {}
 
     if !message? then message = "Channel Unavaliable"
     for key, cbs of outStandingCallbacks
       for cb in cbs
-        if typeof cb is 'function'
-          cb(message)
+        cb?(message)
 
 
   # incomming channel messages for us
@@ -221,7 +222,7 @@ class Channel extends EventEmitter
         @state = 'closed'
 
         @_channelClosed("Channel closed")
-        @_callOutstadingCallbacks({msg: "Channel closed"})
+        @_callOutstandingCallbacks({msg: "Channel closed"})
 
       when methods.channelClose
         @connection.channelManager.channelClosed(channel)
@@ -234,7 +235,7 @@ class Channel extends EventEmitter
           @callbackForMethod(methods["#{closingMethod}Ok"])(args) #this would be the error
 
         @_channelClosed({msg: "Server closed channel", error: args})
-        @_callOutstadingCallbacks("Channel closed by server #{JSON.stringify args}")
+        @_callOutstandingCallbacks("Channel closed by server #{JSON.stringify args}")
 
       when methods.channelOpenOk
         @state = 'open'

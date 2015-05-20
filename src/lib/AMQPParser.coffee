@@ -1,7 +1,7 @@
 # debug             = require('debug')('amqp:AMQPParser')
 {EventEmitter}    = require('events')
 
-{ Indicators, FrameType, MaxFrameBuffer } = require('./config').constants
+{ Indicators, FrameType } = require('./config').constants
 { methodTable, classes, methods }         = require('./config').protocol
 debug                                     = require('./config').debug('amqp:AMQPParser')
 
@@ -11,6 +11,8 @@ debug                                     = require('./config').debug('amqp:AMQP
 
 class AMQPParser extends EventEmitter
   constructor: (version, type, connection) ->
+    @connection = connection
+
     # send the start of the handshake....
     connection.write("AMQP" + String.fromCharCode(0,0,9,1));
 
@@ -49,7 +51,7 @@ class AMQPParser extends EventEmitter
       @frameChannel  = parseIntFromBuffer(@frameHeader,2)
       @frameSize     = parseIntFromBuffer(@frameHeader,4)
 
-      if @frameSize > MaxFrameBuffer
+      if @frameSize > @connection.frameMax
         return @error "Oversize frame #{@frameSize}"
 
       # # setup our frameBuffer

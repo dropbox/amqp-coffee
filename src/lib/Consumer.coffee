@@ -10,7 +10,7 @@ defaults  = require('./defaults')
 {BSON} = require('bson').BSONPure
 
 { methodTable, classes, methods } = require('./config').protocol
-{ MaxFrameSize } = require('./config').constants
+{ MaxEmptyFrameSize } = require('./config').constants
 
 class Consumer extends Channel
 
@@ -181,7 +181,8 @@ class Consumer extends Channel
     @incomingMessage = _.extend @incomingMessage, {weight, properties, size}
 
     # if we're only expecting one packet lets just copy the buffer when we get it
-    if size > MaxFrameSize
+    # otherwise lets create a new incoming data buffer and pre alloc the space
+    if size > @connection.frameMax - MaxEmptyFrameSize
       @incomingMessage.data      = new Buffer(size)
       @incomingMessage.data.used = 0
 
@@ -207,6 +208,7 @@ class Consumer extends Channel
             try
               return JSON.parse message.raw.toString()
             catch e
+              console.error e
               return message.raw
         }
 

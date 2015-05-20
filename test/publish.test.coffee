@@ -6,7 +6,7 @@ uuid = require('node-uuid').v4
 
 AMQP = require('src/amqp')
 
-{ MaxFrameBuffer, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
+{ MaxFrameSize, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
 describe 'Publisher', () ->
   this.timeout(15000)
@@ -184,7 +184,7 @@ describe 'Publisher', () ->
   it 'test we can publish a buffer message that need to be multiple data packets', (done)->
     amqp = null
     queue = uuid()
-    packetSize = MaxFrameBuffer * 2.5
+    packetSize = MaxFrameSize * 2.5
     async.series [
       (next)->
         amqp = new AMQP {host:'localhost'}, (e, r)->

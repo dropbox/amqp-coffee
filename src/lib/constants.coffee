@@ -4,7 +4,7 @@ module.exports = {
     CLOSED:  'closed'
     OPENING: 'opening'
 
-  MaxFrameBuffer : 131072
+  MaxFrameSize : 131072
   MaxEmptyFrameSize : 8
 
   AMQPTypes: Object.freeze({
@@ -42,4 +42,3 @@ module.exports = {
   EndFrame       : new Buffer([206])
 }
 
-module.exports.MaxFrameSize = module.exports.MaxFrameBuffer - module.exports.MaxEmptyFrameSize
