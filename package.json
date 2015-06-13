@@ -20,12 +20,12 @@
     "install": "./scripts/compile.sh"
   },
   "dependencies": {
-    "bson": "^0.3.2",
-    "coffee-script": "^1.9.3",
-    "debug": "^2.2.0",
-    "lodash": "^3.9.3",
-    "neo-async": "^1.2.1",
-    "node-uuid": "^1.4.3"
+    "bson": "~0.3.2",
+    "coffee-script": "~1.9.3",
+    "debug": "~2.2.0",
+    "lodash": "~3.9.3",
+    "neo-async": "~1.2.1",
+    "node-uuid": "~1.4.3"
   },
   "devDependencies": {
     "istanbul": "^0.3.15",
