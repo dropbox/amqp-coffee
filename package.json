@@ -38,6 +38,6 @@
     "url": "https://github.com/dropbox/amqp-coffee.git"
   },
   "engines": {
-    "node": "0.8 || 0.10 || 0.12 || iojs"
+    "node": "0.8 || 0.10 || 0.12 || 2.x.x"
   }
 }
