@@ -2,13 +2,13 @@ debug               = require('./config').debug('amqp:Connection')
 
 {EventEmitter}      = require('events')
 net                 = require('net')
-_                   = require('underscore')
-async               = require('async')
+_                   = require('lodash')
+async               = require('neo-async')
 
-defaults                                                  = require('./defaults')
-{ methodTable, classes, methods }                         = require('./config').protocol
+defaults                                  = require('./defaults')
+{ methodTable, classes, methods }         = require('./config').protocol
 { FrameType, HeartbeatFrame, EndFrame }   = require('./config').constants
-{ serializeInt, serializeFields }                         = require('./serializationHelpers')
+{ serializeInt, serializeFields }         = require('./serializationHelpers')
 
 Queue           = require('./Queue')
 Exchange        = require('./Exchange')
@@ -64,7 +64,7 @@ class Connection extends EventEmitter
 
       (next)=>
         # determine to host to connect to if we have an array of hosts
-        @connectionOptions.hosts = _.flatten([@connectionOptions.host]).map (uri)=>
+        @connectionOptions.hosts = _.flattenDeep([@connectionOptions.host]).map (uri)=>
           if uri.port? and uri.host?
             return {host: uri.host.toLowerCase(), port: parseInt(uri.port)}
 

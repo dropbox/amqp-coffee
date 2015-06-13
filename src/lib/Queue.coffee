@@ -5,7 +5,7 @@ defaults       = require('./defaults')
 
 { methodTable, classes, methods } = require('./config').protocol
 
-_              = require('underscore')
+_              = require('lodash')
 
 class Queue
   ###

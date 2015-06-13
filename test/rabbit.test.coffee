@@ -1,6 +1,6 @@
 should  = require('should')
-async    = require('async')
-_        = require('underscore')
+async    = require('neo-async')
+_        = require('lodash')
 Proxy    = require('./proxy')
 
 uuid = require('node-uuid').v4

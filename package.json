@@ -1,36 +1,43 @@
-{ "name" : "amqp-coffee"
-, "description" : "AMQP driver for node"
-, "keywords" : [ "amqp" ]
-, "version" : "0.1.22"
-, "author" : { "name" : "David Barshow" },
+{
+  "name": "amqp-coffee",
+  "description": "AMQP driver for node",
+  "keywords": [
+    "amqp"
+  ],
+  "version": "1.0.0",
+  "author": {
+    "name": "David Barshow"
+  },
   "licenses": [
     {
       "type": "MIT",
       "url": "https://raw.github.com/dropbox/amqp-coffee/master/LICENSE.txt"
     }
-  ]
-, "main": "./bin/src/amqp.js"
-, "scripts": {
+  ],
+  "main": "./bin/src/amqp.js",
+  "scripts": {
     "test": "./scripts/test.sh",
     "install": "./scripts/compile.sh"
-  }
-, "dependencies": {
-    "async": "*",
-    "bson": "0.2.19",
-    "coffee-script": "1.4.0",
-    "underscore": "*",
-    "debug": "*",
-    "node-uuid": "*"
-  } ,
-  "devDependencies":{
-    "istanbul"   : "0.1.43",
-    "jscoverage" : "0.3.8",
-    "mocha": "*",
-    "should": "*"
+  },
+  "dependencies": {
+    "bson": "^0.3.2",
+    "coffee-script": "^1.9.3",
+    "debug": "^2.2.0",
+    "lodash": "^3.9.3",
+    "neo-async": "^1.2.1",
+    "node-uuid": "^1.4.3"
+  },
+  "devDependencies": {
+    "istanbul": "^0.3.15",
+    "jscoverage": "^0.5.9",
+    "mocha": "^2.2.5",
+    "should": "^6.0.3"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/dropbox/amqp-coffee.git"
   },
-  "engines" : { "node" : "0.8 || 0.10" }
+  "engines": {
+    "node": "0.8 || 0.10 || 0.12 || iojs"
+  }
 }

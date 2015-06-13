@@ -3,7 +3,7 @@ debug     = require('./config').debug('amqp:Publisher')
 Channel   = require('./Channel')
 defaults  = require('./defaults')
 
-_         = require('underscore')
+_         = require('lodash')
 
 {BSON} = require('bson').BSONPure
 

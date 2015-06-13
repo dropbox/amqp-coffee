@@ -3,8 +3,8 @@ os        = require('os')
 
 debug     = require('./config').debug('amqp:Consumer')
 Channel   = require('./Channel')
-_         = require('underscore')
-async     = require('async')
+_         = require('lodash')
+async     = require('neo-async')
 defaults  = require('./defaults')
 
 {BSON} = require('bson').BSONPure
