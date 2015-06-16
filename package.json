@@ -17,17 +17,17 @@
   "main": "./bin/src/amqp.js",
   "scripts": {
     "test": "./scripts/test.sh",
-    "install": "./scripts/compile.sh"
+    "prepublish": "./scripts/compile.sh"
   },
   "dependencies": {
     "bson": "~0.3.2",
-    "coffee-script": "~1.9.3",
     "debug": "~2.2.0",
     "lodash": "~3.9.3",
     "neo-async": "~1.2.1",
     "node-uuid": "~1.4.3"
   },
   "devDependencies": {
+    "coffee-script": "~1.9.3",
     "istanbul": "~0.3.15",
     "jscoverage": "~0.5.9",
     "mocha": "~2.2.5",
