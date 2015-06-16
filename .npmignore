@@ -1,0 +1,10 @@
+*.DS_Store
+*.xml
+
+# coverage
+coverage.html
+./coverage/
+
+# test and publish scripts
+test/
+scripts/
