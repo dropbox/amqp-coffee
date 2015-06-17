@@ -313,6 +313,58 @@ describe 'Publisher', () ->
     ], done
 
 
+  it 'test we can publish quickly to multiple queues shared options 1891', (done)->
+    amqp = null
+    queue = null
+    queueName1 = "testpublish1"
+    queueName2 = "testpublish2"
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName1}, (err, queue)->
+          queue.declare()
+          queue.bind 'amq.direct', queueName1, next
+
+      (next)->
+        amqp.queue {queue:queueName2}, (err, queue)->
+          queue.declare()
+          queue.bind 'amq.direct', queueName2, next
+
+      (next)->
+        options = {confirm:true, mandatory: false}
+        async.forEach [0...10], (i, next)->
+          amqp.publish "amq.direct", ["testpublish",((i%2)+1)].join(''), new Buffer(50), options, (e,r)->
+            should.not.exist e
+            next()
+        ,next
+
+      (next)->
+
+        q1count = 0
+        q2count = 0
+        messageProcessor = (message)->
+          if message.routingKey == queueName1 then q1count++
+          if message.routingKey == queueName2 then q2count++
+
+          if q1count == 5 and q2count == 5 then next()
+
+        consumer = amqp.consume queueName1, {}, messageProcessor, (e,r)->
+          should.not.exist e
+        consumer2 = amqp.consume queueName2, {}, messageProcessor, (e,r)->
+          should.not.exist e
+
+
+    ], (e, res)->
+      amqp.close()
+      done()
+
+
+
   it 'test when be publishing and an out of order op happens we recover', (done)->
     this.timeout(10000)
     amqp = null
