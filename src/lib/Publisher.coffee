@@ -49,7 +49,9 @@ class Publisher extends Channel
       cb = options
       options = {}
 
-    if !options? then options = {}
+    # Because we add modify options, we want to make sure we only modify our internal version
+    # this is why we clone it.
+    if !options? then options = {} else options = _.clone options
 
     if @state isnt "open" or (@confirm and @confirmState isnt "open")
       if @state is "opening" or @state is "closed" or (@confirm and @confirmState is 'opening')
