@@ -1,11 +1,17 @@
 should  = require('should')
 async    = require('async')
 _        = require('underscore')
-Proxy    = require('./proxy')
+SslProxy    = require('./sslproxy')
+Proxy = require('./proxy')
 
 AMQP = require('src/amqp')
 
 describe 'SSL Connection', () ->
+  sslProxyConnection = null
+  before (done)->
+    sslProxyConnection = new SslProxy.route()
+    done()
+
   it 'tests it can connect to localhost using ssl', (done) ->
     amqp = new AMQP {host:'localhost', ssl: true, sslOptions: {secureProtocol:"TLSv1_method", ca: [require('fs').readFileSync('./test/ssl/testca/cacert.pem')]}}, (e, r)->
       should.not.exist e

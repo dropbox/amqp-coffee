@@ -1,7 +1,6 @@
 # https://www.rabbitmq.com/ssl.html
 
-# RABBITMQ_SERVER_START_ARGS="-rabbit ssl_listeners [5671] -rabbit ssl_options[{cacertfile,\"test/ssl/testca/cacert.pem\"},{certfile,\"test/ssl/server/cert.pem\"},{keyfile,\"test/ssl/server/key.pem\"},{verify,verify_peer},{fail_if_no_peer_cert,false}]" rabbitmq-server
-RABBITMQ_SERVER_START_ARGS="-rabbit ssl_listeners [5671] -rabbit ssl_options [{cacertfile,\"test/ssl/testca/cacert.pem\"},{certfile,\"test/ssl/server/cert.pem\"},{keyfile,\"test/ssl/server/key.pem\"},{verify,verify_peer},{fail_if_no_peer_cert,false}]" rabbitmq-server
+# setup certs for testing
 
 mkdir testca
 cd testca
