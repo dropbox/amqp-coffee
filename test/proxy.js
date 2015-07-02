@@ -4,10 +4,6 @@
 var net = require('net');
 var debug = require('debug')('proxy');
 
-process.on("uncaughtException", function(e) {
-  console.log(e);
-});
-
 module.exports.route = function (proxyPort, servicePort, serviceHost) {
   var proxyRoute = this;
   proxyRoute.proxyPort = proxyPort || 9001;

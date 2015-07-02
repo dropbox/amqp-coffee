@@ -100,8 +100,13 @@ class Connection extends EventEmitter
       (next)=>
 
         setupConnectionListeners = ()=>
-          @connection.once 'connect', ()=> @_connectedFirst()
-          @connection.on   'connect', ()=> @_connected()
+          if @connectionOptions.ssl
+            connectionEvent = 'secureConnect'
+          else
+            connectionEvent = 'connect'
+
+          @connection.once connectionEvent, ()=> @_connectedFirst()
+          @connection.on   connectionEvent, ()=> @_connected()
           @connection.on   'error', @_connectionErrorEvent
           @connection.on   'close', @_connectionClosedEvent
 
@@ -116,8 +121,6 @@ class Connection extends EventEmitter
                 @connection.socket.end()
 
             @connection = tls.connect @connectionOptions.port, @connectionOptions.host, tlsOptions, ()=>
-              @connection.emit 'connect'
-
               @connection.on 'error', ()=>
                 @connection.emit 'close'
 

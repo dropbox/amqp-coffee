@@ -6,9 +6,6 @@ var tls = require('tls');
 var debug = require('debug')('ssl-proxy');
 var fs = require('fs');
 
-process.on("uncaughtException", function(e) {
-  console.log(e);
-});
 
 module.exports.route = function (proxyPort, servicePort, serviceHost) {
   var proxyRoute = this;
