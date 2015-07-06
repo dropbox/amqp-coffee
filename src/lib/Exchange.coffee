@@ -22,7 +22,7 @@ class Exchange
 
     if cb? then cb(null, @)
 
-  declare: (args,cb)->
+  declare: (args, cb)->
     if typeof args is 'function'
       cb = args
       args = {}

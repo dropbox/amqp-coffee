@@ -201,7 +201,7 @@ class Connection extends EventEmitter
       publishChannel.publish exchange, routingKey, data, options, cb
 
 
-  close: ()=>
+  close: (cb)=>
     # should close all the things and reset for a new clean guy
     # @connection.removeAllListeners() TODO evaluate this
     @_clearHeartbeatTimer()
@@ -210,9 +210,23 @@ class Connection extends EventEmitter
       @state = 'destroyed'
 
       # nice close, something for the future
-      # @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+      # @taskPush methods.connectionClose, {replyCode:200, replyText: 'closed'}, methods.connectionCloseOk, cb
 
-      @connection.destroy()
+      if cb? then cb = _.once cb
+
+      @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+
+      state = {write: @connection.writable, read: @connection.readable}
+
+      forceConnectionClose = setTimeout ()=>
+        @connection.destroy()
+        cb?()
+      , 1000
+
+      @connection.once 'close', ()=>
+        clearTimeout forceConnectionClose
+        cb?()
+
 
   # TESTING OUT OF ORDER OPERATION
   crashOOO: ()=>
