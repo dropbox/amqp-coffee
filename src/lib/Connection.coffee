@@ -209,12 +209,13 @@ class Connection extends EventEmitter
     _.defer ()=>
       @state = 'destroyed'
 
-      # nice close, something for the future
-      # @taskPush methods.connectionClose, {replyCode:200, replyText: 'closed'}, methods.connectionCloseOk, cb
-
       if cb? then cb = _.once cb
 
-      @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+      # only atempt to cleanly close the connection if our current connection is writable
+      if @connection.writable
+        @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+      else
+        return cb?()
 
       state = {write: @connection.writable, read: @connection.readable}
 
