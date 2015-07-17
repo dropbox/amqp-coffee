@@ -109,7 +109,7 @@ class AMQPParser extends EventEmitter
     methodId = parseIntFromBuffer(buffer, 2)
 
     if !methodTable[classId]? or !methodTable[classId][methodId]?
-      return @error "bad classId, methodId pair", classId, methodId
+      return @error "bad classId, methodId pair: #{classId}, #{methodId}"
 
     method = methodTable[classId][methodId]
     args   = parseFields(buffer, method.fields)
