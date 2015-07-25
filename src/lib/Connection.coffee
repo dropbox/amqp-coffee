@@ -2,6 +2,7 @@ debug               = require('./config').debug('amqp:Connection')
 
 {EventEmitter}      = require('events')
 net                 = require('net')
+tls                 = require('tls')
 _                   = require('underscore')
 async               = require('async')
 
@@ -41,6 +42,8 @@ class Connection extends EventEmitter
 
     # this is the main connect event
     cb = _.once cb if cb?
+    @cb = cb
+
     @state = 'opening'
 
     @connectionOptions = _.defaults args, defaults.connection
@@ -74,7 +77,7 @@ class Connection extends EventEmitter
             return {host: host.toLowerCase(), port: parseInt(port)}
 
           else if typeof(uri) is 'string'
-            return {host: uri.toLowerCase(), port: @connectionOptions.port}
+            return {host: uri.toLowerCase(), port: if !@connectionOptions.ssl then @connectionOptions.port else @connectionOptions.sslPort}
 
           else
             throw new Error("we dont know what do do with the host #{uri}")
@@ -95,11 +98,42 @@ class Connection extends EventEmitter
           next()
 
       (next)=>
-        if @connection then @connection.removeAllListeners()
 
-        @connection = net.connect @connectionOptions.port, @connectionOptions.host
-        @connection.once 'connect', ()=> @_connectedFirst()
-        @connection.on   'connect', ()=> @_connected()
+        setupConnectionListeners = ()=>
+          if @connectionOptions.ssl
+            connectionEvent = 'secureConnect'
+          else
+            connectionEvent = 'connect'
+
+          @connection.once connectionEvent, ()=> @_connectedFirst()
+          @connection.on   connectionEvent, ()=> @_connected()
+          @connection.on   'error', @_connectionErrorEvent
+          @connection.on   'close', @_connectionClosedEvent
+
+        if @connectionOptions.ssl
+          tlsOptions  = @connectionOptions.sslOptions ? {}
+
+          setupTlsConnection = ()=>
+            if @connection?
+              @connection.removeAllListeners()
+
+              if @connection?.socket?
+                @connection.socket.end()
+
+            @connection = tls.connect @connectionOptions.port, @connectionOptions.host, tlsOptions, ()=>
+              @connection.on 'error', ()=>
+                @connection.emit 'close'
+
+            @connection.connect = setupTlsConnection
+            setupConnectionListeners()
+
+          setupTlsConnection()
+
+        else
+          @connection = net.connect @connectionOptions.port, @connectionOptions.host
+          setupConnectionListeners()
+
+        # start listening for timeouts
 
         if @connectionOptions.connectTimeout? and !@connectionOptions.reconnect
           clearTimeout(@_connectTimeout)
@@ -109,42 +143,6 @@ class Connection extends EventEmitter
             @close()
             cb?({code:'T', message:'Connection Timeout', host:@connectionOptions.host, port:@connectionOptions.port})
           , @connectionOptions.connectTimeout
-
-        @connection.on 'error', (e, r)=>
-          if @state isnt 'destroyed'
-            debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
-
-          # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
-          if !@connectionOptions.reconnect
-            if cb?
-              cb(e,r)
-            else
-              @emit 'error', e
-
-        @connection.on 'close', (had_error)=>
-          # go through all of our channels and close them
-          for channelNumber, channel of @channels
-            channel._connectionClosed?()
-
-          clearTimeout(@_connectTimeout)
-          @emit 'close' if @state is "open"
-
-          if @state isnt 'destroyed'
-            if !@connectionOptions.reconnect
-              debug 1, ()-> return "Connection closed not reconnecting..."
-              return
-
-            @state = 'reconnecting'
-            debug 1, ()-> return "Connection closed reconnecting..."
-
-            _.delay ()=>
-              # rotate hosts if we have multiple hosts
-              if @connectionOptions.hosts.length > 1
-                @connectionOptions.hosti = (@connectionOptions.hosti + 1) % @connectionOptions.hosts.length
-                @updateConnectionOptionsHostInformation()
-
-              @connection.connect @connectionOptions.port, @connectionOptions.host
-            , @connectionOptions.reconnectDelayTime
 
         next()
     ], (e, r)->
@@ -203,7 +201,7 @@ class Connection extends EventEmitter
       publishChannel.publish exchange, routingKey, data, options, cb
 
 
-  close: ()=>
+  close: (cb)=>
     # should close all the things and reset for a new clean guy
     # @connection.removeAllListeners() TODO evaluate this
     @_clearHeartbeatTimer()
@@ -211,10 +209,25 @@ class Connection extends EventEmitter
     _.defer ()=>
       @state = 'destroyed'
 
-      # nice close, something for the future
-      # @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+      if cb? then cb = _.once cb
 
-      @connection.destroy()
+      # only atempt to cleanly close the connection if our current connection is writable
+      if @connection.writable
+        @_sendMethod 0, methods.connectionClose, {classId:0, methodId: 0, replyCode:200, replyText:'closed'}
+      else
+        return cb?()
+
+      state = {write: @connection.writable, read: @connection.readable}
+
+      forceConnectionClose = setTimeout ()=>
+        @connection.destroy()
+        cb?()
+      , 1000
+
+      @connection.once 'close', ()=>
+        clearTimeout forceConnectionClose
+        cb?()
+
 
   # TESTING OUT OF ORDER OPERATION
   crashOOO: ()=>
@@ -232,10 +245,50 @@ class Connection extends EventEmitter
     @_resetAllHeartbeatTimers()
     @_setupParser(@_reestablishChannels)
 
+  _connectionErrorEvent: (e, r)=>
+    if @state isnt 'destroyed'
+      debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
+
+    # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
+    if !@connectionOptions.reconnect
+      if @cb?
+        @cb(e,r)
+      else
+        @emit 'error', e
+
+  _connectionClosedEvent: (had_error)=>
+    # go through all of our channels and close them
+    for channelNumber, channel of @channels
+      channel._connectionClosed?()
+
+    clearTimeout(@_connectTimeout)
+    @emit 'close' if @state is "open"
+
+    if @state isnt 'destroyed'
+      if !@connectionOptions.reconnect
+        debug 1, ()-> return "Connection closed not reconnecting..."
+        return
+
+      @state = 'reconnecting'
+      debug 1, ()-> return "Connection closed reconnecting..."
+
+      _.delay ()=>
+        # rotate hosts if we have multiple hosts
+        if @connectionOptions.hosts.length > 1
+          @connectionOptions.hosti = (@connectionOptions.hosti + 1) % @connectionOptions.hosts.length
+          @updateConnectionOptionsHostInformation()
+
+        @connection.connect @connectionOptions.port, @connectionOptions.host
+      , @connectionOptions.reconnectDelayTime
+
+
   _reestablishChannels: ()=>
     async.forEachSeries _.keys(@channels), (channel, done)=>
       if channel is "0" then done() else
-        @channels[channel].reset done
+        # check to make sure the channel is still around before atempting to reset it
+        # the channel could have been temporary
+        if @channelManager.isChannelClosed[channel] then done() else
+          @channels[channel].reset done
 
 
   _closed: ()=>

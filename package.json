@@ -1,7 +1,7 @@
 { "name" : "amqp-coffee"
 , "description" : "AMQP driver for node"
 , "keywords" : [ "amqp" ]
-, "version" : "0.1.22"
+, "version" : "0.1.23"
 , "author" : { "name" : "David Barshow" },
   "licenses": [
     {
@@ -32,5 +32,5 @@
     "type": "git",
     "url": "https://github.com/dropbox/amqp-coffee.git"
   },
-  "engines" : { "node" : "0.8 || 0.10" }
+  "engines" : { "node" : "0.8 || 0.10 || 0.12" }
 }
