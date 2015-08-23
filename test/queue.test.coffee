@@ -763,3 +763,58 @@ describe 'Queue', () ->
 
     ], done
 
+
+  it 'test it can declare a AD queue twice 5897', (done)->
+    amqp = null
+    amqp2 = null
+    eventFired = 0
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+        amqp.on 'error', (e)->
+          should.not.exist e
+          eventFired++
+
+      (next)->
+        queue = amqp.queue {queue:'testQueueHA', durable: true, autoDelete: true}, (e,q)->
+          should.not.exist e
+          eventFired++
+
+          q.declare {}, (e)->
+            should.not.exist e
+            eventFired++
+            next()
+
+        queue.on 'error', (e)->
+          should.not.exist e
+          eventFired++
+      (next)->
+        amqp2 = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp2.on 'error', (e)->
+          should.not.exist e
+          eventFired++
+
+        queue = amqp2.queue {queue:'testQueueHA', durable: true, autoDelete: false}, (e, q)->
+          should.not.exist e
+          eventFired++
+          q.declare {}, (e)->
+            should.exist e
+            eventFired++
+            next()
+
+        queue.on 'error', (e)->
+          should.not.exist e
+          eventFired++
+
+    ], (err, res)->
+      should.not.exist err
+      eventFired.should.eql 4
+      _.delay done, 1000
