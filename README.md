@@ -73,6 +73,8 @@ The `connectionOptions` argument should be an object which specifies:
 * `hostRandom`: false
 * `connectTimeout: 30000 # in ms, this is only used if reconnect is false
 * `clientProperties` : {version: clientVersion, platform, product}
+* `ssl`: false
+* `sslOptions` : {} # tls options like cert, key, ca, secureProtocol, passphrase
 
 Host Examples
 ```coffeescript

@@ -44,6 +44,8 @@ class Queue
         @queueOptions.queue = res.queue
       cb?(err, res)
 
+    if !cb? then return @
+
   bind: (exchange, routingKey, queueName, cb)=>
     if typeof queueName is 'string'
       queueName =  queueName
@@ -58,6 +60,8 @@ class Queue
       arguments: {}
     }
     @taskPush methods.queueBind, queueBindOptions, methods.queueBindOk, cb
+
+    if !cb? then return @
 
   unbind: (exchange, routingKey, queueName, cb)=>
     if typeof queueName is 'string'
@@ -74,6 +78,7 @@ class Queue
     }
     @taskPush methods.queueUnbind, queueUnbindOptions, methods.queueUnbindOk, cb
 
+    if !cb? then return @
 
   messageCount: (args={}, cb)=>
     if typeof args is 'function'
@@ -88,7 +93,6 @@ class Queue
         cb(null, res.messageCount)
       else
         cb('messageCount not returned')
-
 
   consumerCount: (args={}, cb)->
     if typeof args is 'function'
@@ -111,5 +115,7 @@ class Queue
 
     queueDeleteArgs = _.defaults args, defaults.queueDelete, {queue: @queueOptions.queue}
     @taskPush methods.queueDelete, queueDeleteArgs, methods.queueDeleteOk, cb
+
+    if !cb? then return @
 
 module.exports = Queue

@@ -251,5 +251,8 @@ class Channel extends EventEmitter
     if @state isnt 'closed'
       @state = 'closed'
       @_channelClosed()
+      if @channelTracker?
+        clearInterval(@channelTracker)
+        @channelTracker = null
 
 module.exports = Channel

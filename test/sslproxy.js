@@ -2,11 +2,14 @@
 // (http://delog.wordpress.com/2011/04/08/a-simple-tcp-proxy-in-node-js/)
 
 var net = require('net');
-var debug = require('debug')('proxy');
+var tls = require('tls');
+var debug = require('debug')('ssl-proxy');
+var fs = require('fs');
+
 
 module.exports.route = function (proxyPort, servicePort, serviceHost) {
   var proxyRoute = this;
-  proxyRoute.proxyPort = proxyPort || 9001;
+  proxyRoute.proxyPort = proxyPort || 5671;
   var servicePort = servicePort || 5672;
   var serviceHost = serviceHost || '127.0.0.1';
 
@@ -14,7 +17,7 @@ module.exports.route = function (proxyPort, servicePort, serviceHost) {
   proxyRoute.serviceSockets = [];
   proxyRoute.proxySockets = [];
 
-  proxyRoute.server = net.createServer(function (proxySocket) {
+  proxyRoute.server = tls.createServer({ca: [fs.readFileSync('./test/ssl/testca/cacert.pem')], cert: fs.readFileSync('./test/ssl/server/cert.pem'), key: fs.readFileSync('./test/ssl/server/key.pem')},function (proxySocket) {
     // If we're "experiencing trouble", immediately end the connection.
     if (!proxyRoute.operational) {
       proxySocket.end();
