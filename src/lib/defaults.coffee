@@ -19,6 +19,8 @@ module.exports =
     password: "guest"
     vhost: '/'
     port : 5672
+    ssl: false
+    sslPort: 5671
     heartbeat: 10000 # in ms
     reconnect: true
     reconnectDelayTime: 1000 # in ms
@@ -26,6 +28,7 @@ module.exports =
     connectTimeout: 30000 # in ms
     channelMax: 0 # unlimited
     frameMax: MaxFrameSize
+
     clientProperties:
       version:    clientVersion
       platform:   os.hostname() + '-node-' + process.version

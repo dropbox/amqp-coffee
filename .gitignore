@@ -3,3 +3,4 @@ node_modules
 /bin/
 /coverage.html
 /coverage/
+npm-debug.log

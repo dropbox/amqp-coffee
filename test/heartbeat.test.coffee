@@ -30,6 +30,7 @@ describe 'Connection Heartbeats', () ->
   it 'we reset the heartbeat timer while the connection is doing other things', (done)->
     this.timeout(60000)
     amqp = null
+    stage = null
 
     async.series [
       (next)->
@@ -43,7 +44,7 @@ describe 'Connection Heartbeats', () ->
         stage = 2
         amqp.on 'close', ()->
           if stage is 2
-            throw new Error('connection closed')
+            throw new Error("connection closed")
 
         doThings = ()->
 

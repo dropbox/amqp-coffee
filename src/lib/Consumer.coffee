@@ -7,7 +7,8 @@ _         = require('lodash')
 async     = require('neo-async')
 defaults  = require('./defaults')
 
-{BSON} = require('bson').BSONPure
+bson = require('bson')
+BSON = new bson.BSONPure.BSON()
 
 { methodTable, classes, methods } = require('./config').protocol
 { MaxEmptyFrameSize } = require('./config').constants
@@ -25,6 +26,13 @@ class Consumer extends Channel
     return @
 
   consume: (queueName, options, messageHandler, cb)->
+    if typeof options == 'function'
+      if typeof messageHandler == 'function'
+        cb = messageHandler
+
+      messageHandler = options
+      options = {}
+
     @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
     debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel} #{@consumerTag}"
@@ -50,7 +58,7 @@ class Consumer extends Channel
     consumeOptions.consumerTag = @consumerTag
 
     @messageHandler = messageHandler if messageHandler?
-    if !@messageHandler? then return cb("No message handler")
+    if !@messageHandler? then return cb?("No message handler")
 
     @consumeOptions = consumeOptions
     @qosOptions     = qosOptions
