@@ -241,7 +241,14 @@ describe 'Consumer', () ->
     messageProcessor = (m)->
 
       m.data.length.should.eql testData.length
-      m.data.should.eql testData
+
+      # byte by byte comparison replaces # m.data.should.eql testData 
+
+      for byte, i in m.data
+        if byte != testData[i]
+          throw new Error("data is incorrect")
+
+
       done()
 
     async.series [
@@ -277,7 +284,13 @@ describe 'Consumer', () ->
 
     messageProcessor = (m)->
       m.data.length.should.eql testData.length
-      m.data.should.eql testData
+
+      # byte by byte comparison replaces # m.data.should.eql testData 
+
+      for byte, i in m.data
+        if byte != testData[i]
+          throw new Error("data is incorrect")
+
       messagesRecieved++
       done() if messagesRecieved is messagesToSend
 

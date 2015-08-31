@@ -288,8 +288,7 @@ class Connection extends EventEmitter
         # check to make sure the channel is still around before atempting to reset it
         # the channel could have been temporary
         if @channelManager.isChannelClosed[channel] then done() else
-          @channels[channel].reset done
-
+          @channels[channel].reset?(done)
 
   _closed: ()=>
     @_clearHeartbeatTimer()
