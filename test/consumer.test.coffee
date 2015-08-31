@@ -234,7 +234,7 @@ describe 'Consumer', () ->
 
   it 'test we can consume a queue and get a big message 588', (done)->
 
-    testData = new Buffer(MaxFrameSize*3.5)
+    testData = new Buffer(MaxFrameSize*1.5)
     amqp = null
     queue = uuid()
 
