@@ -234,14 +234,21 @@ describe 'Consumer', () ->
 
   it 'test we can consume a queue and get a big message 588', (done)->
 
-    testData = new Buffer(MaxFrameSize*1.5)
+    testData = new Buffer(MaxFrameSize*3.5)
     amqp = null
     queue = uuid()
 
     messageProcessor = (m)->
 
       m.data.length.should.eql testData.length
-      m.data.should.eql testData
+
+      # byte by byte comparison replaces # m.data.should.eql testData 
+
+      for byte, i in m.data
+        if byte != testData[i]
+          throw new Error("data is incorrect")
+
+
       done()
 
     async.series [
@@ -277,7 +284,13 @@ describe 'Consumer', () ->
 
     messageProcessor = (m)->
       m.data.length.should.eql testData.length
-      m.data.should.eql testData
+
+      # byte by byte comparison replaces # m.data.should.eql testData 
+
+      for byte, i in m.data
+        if byte != testData[i]
+          throw new Error("data is incorrect")
+
       messagesRecieved++
       done() if messagesRecieved is messagesToSend
 
