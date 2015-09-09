@@ -12,12 +12,22 @@ defaults  = require('./defaults')
 { methodTable, classes, methods } = require('./config').protocol
 { MaxEmptyFrameSize } = require('./config').constants
 
+CONSUMER_STATE_OPEN = 'open'
+CONSUMER_STATE_OPENING = 'opening'
+
+CONSUMER_STATE_CLOSED = 'closed'
+CONSUMER_STATE_USER_CLOSED = 'user_closed'
+CONSUMER_STATE_CHANNEL_CLOSED = 'channel_closed'
+CONSUMER_STATE_CONNECTION_CLOSED = 'connection_closed'
+
+CONSUMER_STATES_CLOSED = [CONSUMER_STATE_CLOSED, CONSUMER_STATE_USER_CLOSED, CONSUMER_STATE_CONNECTION_CLOSED, CONSUMER_STATE_CHANNEL_CLOSED]
+
 class Consumer extends Channel
 
   constructor: (connection, channel)->
     debug 2, ()=>return "channel open for consumer #{channel}"
     super(connection, channel)
-    @consumerState = 'closed'
+    @consumerState = CONSUMER_STATE_CLOSED
     @messageHandler  = null
 
     @incomingMessage = null
@@ -36,7 +46,7 @@ class Consumer extends Channel
 
     debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel} #{@consumerTag}"
 
-    @consumerState = 'opening'
+    @consumerState = CONSUMER_STATE_OPENING
 
     if options.prefetchCount?
       # this should be a qos channel and we should expect ack's on messages
@@ -68,21 +78,30 @@ class Consumer extends Channel
 
   close: (cb)=>
     @cancel ()=>
+      @consumerState = CONSUMER_STATE_USER_CLOSED
       super()
       cb?()
 
   cancel: (cb)=>
-    if @consumerState isnt 'closed'
-      @consumerState = 'closed'
-      @taskPush methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, cb
+    if !(@consumerState in CONSUMER_STATES_CLOSED)
+      @taskPushPreflight methods.basicCancel, {consumerTag: @consumerTag, noWait:false}, methods.basicCancelOk, @_consumerStateOpenPreflight, cb
     else
       cb?()
 
   pause: (cb)->
-    if @consumerState isnt 'closed' then @cancel(cb) else cb?()
+    if !(@consumerState in CONSUMER_STATES_CLOSED)
+      @cancel (err, res)=>
+        # should pause be a different state?
+        @consumerState = CONSUMER_STATE_USER_CLOSED
+        cb?(err, res)
+    else 
+      cb?()
 
   resume: (cb)->
-    if @consumerState isnt 'open' then @_consume(cb) else cb?()
+    if @consumerState in CONSUMER_STATES_CLOSED 
+      @_consume(cb) 
+    else
+      cb?()
 
   flow: (active, cb)->
     if active then @resume(cb) else @pause(cb)
@@ -109,7 +128,6 @@ class Consumer extends Channel
   # Private
 
   _consume: (cb)=>
-    @consumerState = "reopening" if @consumerState isnt "opening"
     async.series [
       (next)=>
         if @qos
@@ -121,32 +139,33 @@ class Consumer extends Channel
         @taskQueuePushRaw {type: 'method', method: methods.basicConsume, args: @consumeOptions, okMethod: methods.basicConsumeOk, preflight: @_basicConsumePreflight}, next
 
       (next)=>
-        @consumerState = 'open'
+        @consumerState = CONSUMER_STATE_OPEN
         next()
     ], cb
 
   _basicConsumePreflight: ()=>
-    return @consumerState != 'open'
+    return @consumerState != CONSUMER_STATE_OPEN
+
+  _consumerStateOpenPreflight: ()=>
+    return @consumerState == CONSUMER_STATE_OPEN
 
   _channelOpen: ()=>
-    if @consumeOptions? and @consumerState is 'closed' then @_consume()
+    if @consumeOptions? and @consumerState is CONSUMER_STATE_CONNECTION_CLOSED then @_consume()
 
   _channelClosed: (reason)=>
     # if we're reconnecting it is approiate to emit the error on reconnect, this is specifically useful
     # for auto delete queues
-    if @consumerState is 'reopening'
+    if @consumerState is CONSUMER_STATE_CHANNEL_CLOSED
       if !reason? then reason = {}
       @emit 'error', reason
 
     @outstandingDeliveryTags = {}
     if @connection.state is 'open' and @consumerState is 'open'
-      if @connection.state is 'open'
-        @consumerState = 'reopening'
+        @consumerState = CONSUMER_STATE_CHANNEL_CLOSED
         @_consume()
-      else
-        @consumerState = 'closed'
     else
-      @consumerState = 'closed'
+      @consumerState = CONSUMER_STATE_CONNECTION_CLOSED
+
 
   # QOS RELATED Callbacks
   ack: ()->

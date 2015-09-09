@@ -134,6 +134,9 @@ class Channel extends EventEmitter
   taskPush: ( method, args, okMethod, cb)=> # same as queueSendMethod
     @queue.push {type: 'method', method, args, okMethod, cb}
 
+  taskPushPreflight: ( method, args, okMethod, preflight, cb)=> 
+    @queue.push {type: 'method', method, args, okMethod, preflight, cb}
+
   taskQueuePushRaw: (task, cb)=>
     task.cb = cb if cb? and task?
     @queue.push task
