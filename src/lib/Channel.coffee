@@ -8,12 +8,6 @@ _     = require('underscore')
 defaults = require('./defaults')
 { methodTable, classes, methods } = require('./config').protocol
 
-CHANNEL_TIMEOUT = 2000
-CHANNEL_CHECK   = 1000
-
-if process.env.AMQP_TEST?
-  CHANNEL_TIMEOUT = 200
-  CHANNEL_CHECK   = 100
 
 # we track this to avoid node's max stack size with a saturated async queue
 OVERFLOW_PROTECTION = 0
@@ -37,12 +31,16 @@ class Channel extends EventEmitter
     @transactional     = true # THIS IS NOT AMQP TRANSACTIONS
     @lastChannelAccess = Date.now()
 
+    if process.env.AMQP_TEST?
+      @connection.connectionOptions.temporaryChannelTimeout = 200
+      @connection.connectionOptions.temporaryChannelTimeoutCheck = 100
+
     if !@channelTracker?
       @channelTracker = setInterval ()=>
-        if @lastChannelAccess < (Date.now() - CHANNEL_TIMEOUT)
+        if @lastChannelAccess < (Date.now() - @connection.connectionOptions.temporaryChannelTimeout)
           debug 4, ()->return "Closing channel due to inactivity"
           @close(true)
-      , CHANNEL_CHECK
+      , @connection.connectionOptions.temporaryChannelTimeoutCheck
 
   open: (cb)->
     if @state is "closed"
@@ -61,7 +59,7 @@ class Channel extends EventEmitter
 
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
     # or we're within our acceptable time window for this queue
-    if @state is 'closed' and (!@transactional or @listeners('open').length > 0 or (@transactional and @lastChannelAccess > (Date.now() - CHANNEL_TIMEOUT)))
+    if @state is 'closed' and (!@transactional or @listeners('open').length > 0 or (@transactional and @lastChannelAccess > (Date.now() - @connection.connectionOptions.temporaryChannelTimeout)))
       debug 1, ()->return "State is closed... reconnecting"
 
       async.series [
