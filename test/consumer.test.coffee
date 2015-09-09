@@ -814,6 +814,56 @@ describe 'Consumer', () ->
     ]
 
 
+  xit 'test we can consume and interrupt a nameless queue 806', (done)->
+    # INCOMPLETE
+    this.timeout = 60000
+    thisproxy = new proxy.route(7007, 5672, "localhost")
+    amqp = null
+
+    testData = {test:"message"}
+    amqp = null
+    messagesRecieved = 0
+    consumer = null
+    queue = null
+
+    messageProcessor = (m)->
+      
+      thisproxy.interrupt()
+      _.delay ()->
+        consumer.resume()
+      , 1000
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', port: 7007}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:""}, (e,q)->
+          should.not.exist e
+
+          q.declare ()->
+            queue = q.queueOptions.queue
+            next()
+
+      
+      (next)->
+        consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+
+        consumer.on 'error', (error)->
+          should.exist error
+          error.error.replyCode.should.eql 404
+
+      (next)->
+        amqp.publish "", queue, testData, {confirm: true}, next
+
+    ]
+
+
+
   it 'test we can close a consumer channel 854.5', (done)->
 
     amqp = null
