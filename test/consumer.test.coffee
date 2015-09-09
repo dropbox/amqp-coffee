@@ -809,13 +809,13 @@ describe 'Consumer', () ->
         consumer.on 'error', (error)->
           should.exist error
           error.error.replyCode.should.eql 404
+          thisproxy.close()
           done()
 
     ]
 
 
-  xit 'test we can consume and interrupt a nameless queue 806', (done)->
-    # INCOMPLETE
+  it 'test we can consume and interrupt a nameless queue 806', (done)->
     this.timeout = 60000
     thisproxy = new proxy.route(7007, 5672, "localhost")
     amqp = null
@@ -826,12 +826,14 @@ describe 'Consumer', () ->
     consumer = null
     queue = null
 
+    errorCount = 0
+
     messageProcessor = (m)->
-      
+      messagesRecieved++
       thisproxy.interrupt()
       _.delay ()->
-        consumer.resume()
-      , 1000
+        consumer.resume() 
+      , 25
 
     async.series [
       (next)->
@@ -856,6 +858,11 @@ describe 'Consumer', () ->
         consumer.on 'error', (error)->
           should.exist error
           error.error.replyCode.should.eql 404
+          errorCount++
+          if errorCount is 2
+            messagesRecieved.should.eql 1
+            thisproxy.close()
+            done()
 
       (next)->
         amqp.publish "", queue, testData, {confirm: true}, next

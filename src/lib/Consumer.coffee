@@ -109,6 +109,7 @@ class Consumer extends Channel
   # Private
 
   _consume: (cb)=>
+    @consumerState = "reopening" if @consumerState isnt "opening"
     async.series [
       (next)=>
         if @qos
