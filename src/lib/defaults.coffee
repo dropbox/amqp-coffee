@@ -29,6 +29,9 @@ module.exports =
     channelMax: 0 # unlimited
     frameMax: MaxFrameSize
 
+    temporaryChannelTimeout: 2000 # in ms
+    temporaryChannelTimeoutCheck: 1000 # in ms
+
     clientProperties:
       version:    clientVersion
       platform:   os.hostname() + '-node-' + process.version
