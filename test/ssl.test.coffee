@@ -1,6 +1,6 @@
 should  = require('should')
-async    = require('async')
-_        = require('underscore')
+async    = require('neo-async')
+_        = require('lodash')
 SslProxy    = require('./sslproxy')
 Proxy = require('./proxy')
 

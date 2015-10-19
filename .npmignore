@@ -1,5 +1,10 @@
-node_modules
-/.DS_Store
-/coverage.html
-/coverage/
-npm-debug.log
+*.DS_Store
+*.xml
+*.log
+
+# coverage
+coverage.html
+./coverage/
+
+# test and publish scripts
+test/

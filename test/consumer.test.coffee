@@ -1,13 +1,13 @@
 should  = require('should')
-async    = require('async')
-_        = require('underscore')
+async    = require('neo-async')
+_        = require('lodash')
 proxy    = require('./proxy')
 uuid = require('node-uuid').v4
 
 AMQP = require('src/amqp')
 
-
-{BSON} = require('bson').BSONPure
+bson = require 'bson'
+BSON = new bson.BSONPure.BSON()
 
 { MaxFrameSize, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 

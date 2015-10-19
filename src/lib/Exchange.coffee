@@ -3,7 +3,7 @@ debug          = require('./config').debug('amqp:Exchange')
 { methods }    = require('./config').protocol
 defaults       = require('./defaults')
 
-_              = require('underscore')
+_              = require('lodash')
 
 class Exchange
   constructor: (channel, args, cb)->

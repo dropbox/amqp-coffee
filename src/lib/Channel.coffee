@@ -2,8 +2,8 @@
 {EventEmitter} = require('events')
 
 debug = require('./config').debug('amqp:Channel')
-async = require('async')
-_     = require('underscore')
+async = require('neo-async')
+_     = require('lodash')
 
 defaults = require('./defaults')
 { methodTable, classes, methods } = require('./config').protocol
