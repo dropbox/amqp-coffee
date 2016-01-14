@@ -763,6 +763,92 @@ describe 'Consumer', () ->
     ]
 
 
+  it 'test we can consumer cancel notify', (done)->
+
+    testData = {test:"message"}
+    amqp = null
+    queue = uuid()
+    messagesRecieved = 0
+    consumer = null
+    queueObj = null
+
+    messageProcessor = (m)->
+      console.error m
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', clientProperties: { capabilities: { consumer_cancel_notify: true }}}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue, autoDelete:false}, (e,q)->
+          queueObj = q
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+
+      (next)->
+        consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        consumer.on 'error', (err, res)->
+          should.exist err
+          err.should.eql "Server initiated basicCancel"
+          done()
+  
+        queueObj.delete(next)
+
+    ], (err, res)->
+      should.not.exist err
+      amqp.close()
+
+  it 'test we can consumer cancel notify with cancel listener', (done)->
+
+    testData = {test:"message"}
+    amqp = null
+    queue = uuid()
+    messagesRecieved = 0
+    consumer = null
+    queueObj = null
+
+    messageProcessor = (m)->
+      console.error m
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost', clientProperties: { capabilities: { consumer_cancel_notify: true }}}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue, autoDelete:false}, (e,q)->
+          queueObj = q
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+
+      (next)->
+        consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        consumer.on 'error', (err, res)->
+          should.not.exist true
+
+        consumer.on 'cancel', (err, res)->
+          should.exist err
+          err.should.eql "Server initiated basicCancel"
+          done()
+
+        queueObj.delete(next)
+
+    ], (err, res)->
+      should.not.exist err
+      amqp.close()
 
   it 'test we can consume and interrupt a autoDelete queue 854', (done)->
 

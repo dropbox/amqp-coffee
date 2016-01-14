@@ -75,7 +75,7 @@ The `connectionOptions` argument should be an object which specifies:
 * `clientProperties` : {version: clientVersion, platform, product}
 * `ssl`: false
 * `sslOptions` : {} # tls options like cert, key, ca, secureProtocol, passphrase
-* `temporaryChannelTimeout: 2000 # in ms, temporary channels are used to setup queues, bindings, and exchanges. If you are frequently tearing down and setting up new queues it could make sense to make this longer.
+* `temporaryChannelTimeout`: 2000 # in ms, temporary channels are used to setup queues, bindings, and exchanges. If you are frequently tearing down and setting up new queues it could make sense to make this longer.
 
 Host Examples
 ```coffeescript
@@ -249,6 +249,10 @@ amqp = new AMQP ()->
 ```
 #### consumer Event: error
 Errors will be emitted from the consumer if we can not consumer from that queue anymore.  For example if you're consuming a autoDelete queue and you reconnect that queue will be gone.  It will return the raw error message with code as the message.
+
+#### consumer Event: cancel
+The cancel event will be emitted from the consumer if we recieve a server initiated "basic.cancel".  For this to happen you must
+let the server know you are expecting a cancel, you do this by specifying clientProperties on connect. `clientProperties: { capabilities: { consumer_cancel_notify: true }}`  https://www.rabbitmq.com/consumer-cancel.html
 
 #### consumer.setQos(prefetchCount, [callback])
 
