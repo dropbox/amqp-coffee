@@ -1,4 +1,5 @@
 jspack = require('../jspack')
+util = requrie('util')
 
 exports.serializeFloat = serializeFloat = (b, size, value, bigEndian)->
   jp = new jspack(bigEndian)
