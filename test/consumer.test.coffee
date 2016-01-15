@@ -7,7 +7,8 @@ uuid = require('node-uuid').v4
 AMQP = require('src/amqp')
 
 
-{BSON} = require('bson').BSONPure
+bson    = require('bson')
+BSON    = new bson.BSONPure.BSON()
 
 { MaxFrameSize, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
@@ -242,7 +243,7 @@ describe 'Consumer', () ->
 
       m.data.length.should.eql testData.length
 
-      # byte by byte comparison replaces # m.data.should.eql testData 
+      # byte by byte comparison replaces # m.data.should.eql testData
 
       for byte, i in m.data
         if byte != testData[i]
@@ -285,7 +286,7 @@ describe 'Consumer', () ->
     messageProcessor = (m)->
       m.data.length.should.eql testData.length
 
-      # byte by byte comparison replaces # m.data.should.eql testData 
+      # byte by byte comparison replaces # m.data.should.eql testData
 
       for byte, i in m.data
         if byte != testData[i]
@@ -833,7 +834,7 @@ describe 'Consumer', () ->
       messagesRecieved++
       thisproxy.interrupt()
       _.delay ()->
-        consumer.resume() 
+        consumer.resume()
       , 25
 
     async.series [
@@ -850,7 +851,7 @@ describe 'Consumer', () ->
             queue = q.queueOptions.queue
             next()
 
-      
+
       (next)->
         consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
           should.not.exist e
@@ -891,7 +892,7 @@ describe 'Consumer', () ->
       messagesRecieved++
       thisproxy.interrupt()
       _.delay ()->
-        consumer.resume() 
+        consumer.resume()
       , 25
 
     async.series [
@@ -908,7 +909,7 @@ describe 'Consumer', () ->
             queue = q.queueOptions.queue
             next()
 
-      
+
       (next)->
         consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
           should.not.exist e
@@ -951,7 +952,7 @@ describe 'Consumer', () ->
       messagesRecieved++
       thisproxy.interrupt()
       _.delay ()->
-        consumer.close() 
+        consumer.close()
       , 500
 
     async.series [
@@ -968,7 +969,7 @@ describe 'Consumer', () ->
             queue = q.queueOptions.queue
             next()
 
-      
+
       (next)->
         consumer = amqp.consume queue, {prefetchCount: 1}, messageProcessor, (e,r)->
           should.not.exist e
