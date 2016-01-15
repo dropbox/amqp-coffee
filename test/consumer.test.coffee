@@ -796,7 +796,7 @@ describe 'Consumer', () ->
       (next)->
         consumer.on 'error', (err, res)->
           should.exist err
-          err.should.eql "Server initiated basicCancel"
+          err.code.should.eql "basicCancel"
           done()
   
         queueObj.delete(next)

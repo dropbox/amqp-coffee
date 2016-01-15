@@ -210,7 +210,9 @@ class Consumer extends Channel
         if @listeners('cancel').length > 0
           @emit 'cancel', "Server initiated basicCancel"
         else
-          @emit 'error', "Server initiated basicCancel"
+          cancelError = new Error("Server initiated basicCancel")
+          cancelError.code = 'basicCancel'
+          @emit 'error', cancelError
 
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->
