@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "async": "*",
-    "bson": "^0.4.21",
+    "bson": "~0.4.21",
     "debug": "*",
     "node-uuid": "*",
     "underscore": "*"
