@@ -521,8 +521,11 @@ class Connection extends EventEmitter
       switch method
         when methods.connectionStart
           if args.versionMajor != 0 and args.versionMinor!=9
-            @emit 'error', new Error("Bad server version")
-            return
+            serverVersionError = new Error('Bad server version')
+            serverVersionError.code = 'badServerVersion'
+
+            return @emit 'error', serverVersionError
+            
           # set our server properties up
           @serverProperties = args.serverProperties
           @_sendMethod 0, methods.connectionStartOk, {
