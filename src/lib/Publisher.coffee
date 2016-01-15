@@ -5,7 +5,8 @@ defaults  = require('./defaults')
 
 _         = require('underscore')
 
-{BSON} = require('bson').BSONPure
+bson    = require('bson')
+BSON    = new bson.BSONPure.BSON()
 
 { methodTable, classes, methods } = require('./config').protocol
 
