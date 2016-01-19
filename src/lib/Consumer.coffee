@@ -7,7 +7,8 @@ _         = require('underscore')
 async     = require('async')
 defaults  = require('./defaults')
 
-{BSON} = require('bson').BSONPure
+bson    = require('bson')
+BSON    = new bson.BSONPure.BSON()
 
 { methodTable, classes, methods } = require('./config').protocol
 { MaxEmptyFrameSize } = require('./config').constants
@@ -94,12 +95,12 @@ class Consumer extends Channel
         # should pause be a different state?
         @consumerState = CONSUMER_STATE_USER_CLOSED
         cb?(err, res)
-    else 
+    else
       cb?()
 
   resume: (cb)->
-    if @consumerState in CONSUMER_STATES_CLOSED 
-      @_consume(cb) 
+    if @consumerState in CONSUMER_STATES_CLOSED
+      @_consume(cb)
     else
       cb?()
 

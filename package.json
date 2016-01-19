@@ -1,30 +1,35 @@
-{ "name" : "amqp-coffee"
-, "description" : "AMQP driver for node"
-, "keywords" : [ "amqp" ]
-, "version" : "0.1.27"
-, "author" : { "name" : "David Barshow" },
+{
+  "name": "amqp-coffee",
+  "description": "AMQP driver for node",
+  "keywords": [
+    "amqp"
+  ],
+  "version": "0.1.27",
+  "author": {
+    "name": "David Barshow"
+  },
   "licenses": [
     {
       "type": "MIT",
       "url": "https://raw.github.com/dropbox/amqp-coffee/master/LICENSE.txt"
     }
-  ]
-, "main": "./bin/src/amqp.js"
-, "scripts": {
+  ],
+  "main": "./bin/src/amqp.js",
+  "scripts": {
     "test": "./scripts/test.sh",
     "prepublish": "./scripts/compile.sh"
-  }
-, "dependencies": {
+  },
+  "dependencies": {
     "async": "*",
-    "bson": "~0.3.2",
-    "underscore": "*",
+    "bson": "~0.4.21",
     "debug": "*",
-    "node-uuid": "*"
-  } ,
-  "devDependencies":{
+    "node-uuid": "*",
+    "underscore": "*"
+  },
+  "devDependencies": {
     "coffee-script": "1.4.0",
-    "istanbul"   : "0.1.43",
-    "jscoverage" : "0.3.8",
+    "istanbul": "0.1.43",
+    "jscoverage": "0.3.8",
     "mocha": "2.2.5",
     "should": "*"
   },
@@ -32,5 +37,7 @@
     "type": "git",
     "url": "https://github.com/dropbox/amqp-coffee.git"
   },
-  "engines" : { "node": ">=0.8.0" }
+  "engines": {
+    "node": ">=0.8.0"
+  }
 }
