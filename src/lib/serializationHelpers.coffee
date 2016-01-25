@@ -135,7 +135,7 @@ exports.serializeValue = serializeValue = (b, value)->
       else if value instanceof Buffer
         b[b.used++] = 'x'.charCodeAt(0)
         serializeBuffer(b, value)
-      else if util.isArray(value)
+      else if Array.isArray(value)
         b[b.used++] = 'A'.charCodeAt(0)
         serializeArray(b, value)
       else if typeof(value) == 'object'

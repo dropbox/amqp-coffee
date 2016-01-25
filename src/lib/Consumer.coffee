@@ -161,7 +161,7 @@ class Consumer extends Channel
       @emit 'error', reason
 
     @outstandingDeliveryTags = {}
-    if @connection.state is 'open' and @consumerState is 'open'
+    if @connection.state is 'open' and @consumerState is CONSUMER_STATE_OPEN
         @consumerState = CONSUMER_STATE_CHANNEL_CLOSED
         @_consume()
     else
@@ -203,6 +203,18 @@ class Consumer extends Channel
           @incomingMessage = args
         else
           @incomingMessage = args
+
+      when methods.basicCancel
+        debug 1, ()->return "basicCancel"
+        @consumerState = CONSUMER_STATE_CLOSED
+
+        if @listeners('cancel').length > 0
+          @emit 'cancel', "Server initiated basicCancel"
+        else
+          cancelError = new Error("Server initiated basicCancel")
+          cancelError.code = 'basicCancel'
+          @emit 'error', cancelError
+
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->
     debug 3, ()->return "_onContentHeader #{properties}"
