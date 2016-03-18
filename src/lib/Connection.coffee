@@ -339,7 +339,7 @@ class Connection extends EventEmitter
     if @parser? then @parser.removeAllListeners()
 
     # setup the parser
-    @parser = new AMQPParser('0-9-1', 'client', @connection)
+    @parser = new AMQPParser('0-9-1', 'client', @)
 
     @parser.on 'method',         @_onMethod
     @parser.on 'contentHeader',  @_onContentHeader
@@ -525,7 +525,7 @@ class Connection extends EventEmitter
             serverVersionError.code = 'badServerVersion'
 
             return @emit 'error', serverVersionError
-            
+
           # set our server properties up
           @serverProperties = args.serverProperties
           @_sendMethod 0, methods.connectionStartOk, {
