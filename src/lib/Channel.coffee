@@ -55,6 +55,7 @@ class Channel extends EventEmitter
       cb("state isn't closed.  not opening channel") if cb?
 
   reset: (cb)=>
+    console.trace()
     @_callOutstandingCallbacks("Channel Opening or Reseting")
 
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
@@ -134,7 +135,7 @@ class Channel extends EventEmitter
   taskPush: ( method, args, okMethod, cb)=> # same as queueSendMethod
     @queue.push {type: 'method', method, args, okMethod, cb}
 
-  taskPushPreflight: ( method, args, okMethod, preflight, cb)=> 
+  taskPushPreflight: ( method, args, okMethod, preflight, cb)=>
     @queue.push {type: 'method', method, args, okMethod, preflight, cb}
 
   taskQueuePushRaw: (task, cb)=>
