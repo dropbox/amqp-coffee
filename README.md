@@ -45,6 +45,8 @@ amqpConnection = new AMQP {host:'localhost'}, (e, r)->
   * [connection.exchange([exchangeArgs],[callback])](#connectionexchangeexchangeargscallback)
     * [exchange.declare([exchangeArgs],[callback])](#exchangedeclareexchangeargscallback)
     * [exchange.delete([exchangeDeleteOptions], [callback])](#exchangedeleteexchangedeleteoptions-callback)
+    * [exchange.bind(destinationExchange, routingKey, [sourceExchange], [callback])](#exchangedeleteexchangedeleteoptions-callback)
+    * [exchange.unbind(destinationExchange, routingKey, [sourceExchange], [callback])](#exchangedeleteexchangedeleteoptions-callback)
   * [connection.publish(exchange, routingKey, data, [publishOptions], [callback])](#connectionpublishexchange-routingkey-data-publishoptions-callback)
   * [connection.consume(queueName, options, messageListener, [callback])](#connectionconsumequeuename-options-messagelistener-callback)
     * [consumer.setQos(prefetchCount, [callback])](#consumersetqosprefetchcount-callback)
@@ -189,6 +191,12 @@ The `exchangeDeleteOptions` argument should be an object which specifies:
 * `exchange`: the name of the exchange
 * `ifUnused`: false
 * `noWait`: false
+
+#### exchange.bind(destinationExchange, routingKey, [sourceExchange], [callback])
+Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange its being called on.
+
+#### exchange.unbind(exchange.unbind(destinationExchange, routingKey, [sourceExchange], [callback])
+Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange its being called on.
 
 ### connection.publish(exchange, routingKey, data, [publishOptions], [callback])
 

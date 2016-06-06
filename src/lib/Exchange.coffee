@@ -23,7 +23,10 @@ class Exchange
     if cb? then cb(null, @)
 
   declare: (args, cb)->
-    if typeof args is 'function'
+    if !args? and !cb?
+      declareOptions = @exchangeOptions
+
+    else if typeof args is 'function'
       cb = args
       args = {}
       declareOptions = @exchangeOptions
@@ -31,6 +34,7 @@ class Exchange
       declareOptions = _.defaults args, @exchangeOptions
 
     @taskPush methods.exchangeDeclare, declareOptions, methods.exchangeDeclareOk, cb
+    return @
 
   delete: (args, cb)=>
     if typeof args is 'function'
@@ -40,6 +44,43 @@ class Exchange
     exchangeDeleteOptions = _.defaults args, defaults.exchangeDelete, {exchange: @exchangeOptions.exchange}
 
     @taskPush methods.exchangeDelete, exchangeDeleteOptions, methods.exchangeDeleteOk, cb
+    return @
+
+  bind: (destExchange, routingKey, sourceExchange, cb)=>
+    if typeof sourceExchange is 'string'
+      sourceExchangeName =  sourceExchange
+    else
+      cb = sourceExchange
+      sourceExchangeName = @exchangeOptions.exchange
+
+    exchangeBindOptions = {
+      destination:  destExchange
+      source:       sourceExchangeName
+      routingKey:   routingKey
+      arguments: {}
+    }
+
+    @taskPush methods.exchangeBind, exchangeBindOptions, methods.exchangeBindOk, cb
+    return @
+
+  unbind: (destExchange, routingKey, sourceExchange, cb)=>
+    if typeof sourceExchange is 'string'
+      sourceExchangeName =  sourceExchange
+    else
+      cb = sourceExchange
+      sourceExchangeName = @exchangeOptions.exchange
+
+    exchangeUnbindOptions = {
+      destination:  destExchange
+      source:       sourceExchangeName
+      routingKey:   routingKey
+      arguments: {}
+    }
+
+    @taskPush methods.exchangeUnbind, exchangeUnbindOptions, methods.exchangeUnbindOk, cb
+    return @
+
+
 
 
 module.exports = Exchange
