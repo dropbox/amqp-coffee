@@ -55,9 +55,8 @@ class Channel extends EventEmitter
       cb("state isn't closed.  not opening channel") if cb?
 
   reset: (cb)=>
-    console.trace()
-    @_callOutstandingCallbacks("Channel Opening or Reseting")
 
+    @_callOutstandingCallbacks("Channel Opening or Reseting") if @state isnt 'open'
     # if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
     # or we're within our acceptable time window for this queue
     if @state is 'closed' and (!@transactional or @listeners('open').length > 0 or (@transactional and @lastChannelAccess > (Date.now() - @connection.connectionOptions.temporaryChannelTimeout)))
