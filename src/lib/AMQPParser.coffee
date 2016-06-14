@@ -14,7 +14,7 @@ class AMQPParser extends EventEmitter
     @connection = connection
 
     # send the start of the handshake....
-    connection.write("AMQP" + String.fromCharCode(0,0,9,1));
+    @connection.connection.write("AMQP" + String.fromCharCode(0,0,9,1));
 
     # set up some defaults, for reuse
     @frameHeader = new Buffer(7)
@@ -30,7 +30,6 @@ class AMQPParser extends EventEmitter
 
 
   # Data Handlers ####################################################################
-
   header: (data)->
     dataLength = data.length
     neededForCompleteHeader = @frameHeader.length - @frameHeader.used
@@ -145,7 +144,7 @@ class AMQPParser extends EventEmitter
 
   error: (error)->
     debug "Parser error #{error}"
-    
+
     parserError = new Error(error)
     parserError.code = 'parser'
 
