@@ -193,10 +193,10 @@ The `exchangeDeleteOptions` argument should be an object which specifies:
 * `noWait`: false
 
 #### exchange.bind(destinationExchange, routingKey, [sourceExchange], [callback])
-Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange its being called on.
+Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange it's being called on.
 
 #### exchange.unbind(exchange.unbind(destinationExchange, routingKey, [sourceExchange], [callback])
-Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange its being called on.
+Rabbitmq Extension, to bind between exchanges, `sourceExchange` if omitted will be defaulted to the exchange it's being called on.
 
 ### connection.publish(exchange, routingKey, data, [publishOptions], [callback])
 
