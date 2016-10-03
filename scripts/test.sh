@@ -86,10 +86,10 @@ TESTS=`find $FILES -iname "$PATTERN"`
 
 #ulimit -n 10000
 
-pushd $ROOT/test/ssl/
+cd $ROOT/test/ssl/
 ./cleanSsl.sh
 ./setupSsl.sh
-popd
+cd $ROOT
 
 $ROOT/scripts/compile.sh
 
