@@ -86,6 +86,11 @@ TESTS=`find $FILES -iname "$PATTERN"`
 
 #ulimit -n 10000
 
+pushd $ROOT/test/ssl/
+./cleanSsl.sh
+./setupSsl.sh
+popd
+
 $ROOT/scripts/compile.sh
 
 if $COVERAGE; then

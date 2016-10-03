@@ -4,3 +4,6 @@ node_modules
 /coverage.html
 /coverage/
 npm-debug.log
+/test/ssl/testca
+/test/ssl/server
+/test/ssl/client
