@@ -12,7 +12,7 @@ amqpClient = new AMQP {host: 'localhost'}, (error)->
       recievedMessages++
 
       if recievedMessages == expectedMessages
-        console.error "Recieved all expected messages"
+        console.error "Received all expected messages"
 
         consumer.close ()->
           console.error "Closed the consumer"

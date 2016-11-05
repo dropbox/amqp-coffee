@@ -298,7 +298,7 @@ class Connection extends EventEmitter
 
   # on initial connection we should start expecting heart beats
   # on disconnect or close we should stop expecting these.
-  # on heartbeat recieved we should expect another
+  # on heartbeat received we should expect another
   _receivedHeartbeat: ()=>
     debug 4, ()=> return "♥ heartbeat"
     @_resetHeartbeatTimer()
@@ -510,7 +510,7 @@ class Connection extends EventEmitter
     if channel > 0
       # delegate to correct channel
       if !@channels[channel]?
-        return debug 1, ()-> return "Recieved a message on untracked channel #{channel}, #{method.name} #{JSON.stringify args}"
+        return debug 1, ()-> return "Received a message on untracked channel #{channel}, #{method.name} #{JSON.stringify args}"
       if !@channels[channel]._onChannelMethod?
         return debug 1, ()-> return "Channel #{channel} has no _onChannelMethod"
       @channels[channel]._onChannelMethod(channel, method, args)
