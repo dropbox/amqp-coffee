@@ -147,7 +147,7 @@
     We use the 'name' attribute as an identifier, usually within the context
     of the surrounding entities.
 
-    We use spaces to seperate words in names, so that we can print names in
+    We use spaces to separate words in names, so that we can print names in
     their natural form depending on the context - underlines for source code,
     hyphens for written text, etc.
 
