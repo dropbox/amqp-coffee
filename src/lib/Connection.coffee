@@ -249,7 +249,7 @@ class Connection extends EventEmitter
     if @state isnt 'destroyed'
       debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
 
-    # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
+    # if we are to keep trying we wont callback until we're successful, or we've hit a timeout.
     if !@connectionOptions.reconnect
       if @cb?
         @cb(e,r)
