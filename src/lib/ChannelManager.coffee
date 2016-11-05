@@ -4,7 +4,7 @@ Channel Manager
 
 we track and manage all the channels on a connection.
 we will dynamically add and remove publish channels... maybe
-we track confirm channels and non confirm channels seperately.
+we track confirm channels and non confirm channels separately.
 
 ###
 

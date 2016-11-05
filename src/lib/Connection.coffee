@@ -249,7 +249,7 @@ class Connection extends EventEmitter
     if @state isnt 'destroyed'
       debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
 
-    # if we are to keep trying we wont callback until we're sucessfull, or we've hit a timeout.
+    # if we are to keep trying we wont callback until we're successful, or we've hit a timeout.
     if !@connectionOptions.reconnect
       if @cb?
         @cb(e,r)
@@ -285,7 +285,7 @@ class Connection extends EventEmitter
   _reestablishChannels: ()=>
     async.forEachSeries _.keys(@channels), (channel, done)=>
       if channel is "0" then done() else
-        # check to make sure the channel is still around before atempting to reset it
+        # check to make sure the channel is still around before attempting to reset it
         # the channel could have been temporary
         if @channelManager.isChannelClosed(channel) then done() else
           @channels[channel].reset?(done)
@@ -298,7 +298,7 @@ class Connection extends EventEmitter
 
   # on initial connection we should start expecting heart beats
   # on disconnect or close we should stop expecting these.
-  # on heartbeat recieved we should expect another
+  # on heartbeat received we should expect another
   _receivedHeartbeat: ()=>
     debug 4, ()=> return "♥ heartbeat"
     @_resetHeartbeatTimer()
@@ -510,7 +510,7 @@ class Connection extends EventEmitter
     if channel > 0
       # delegate to correct channel
       if !@channels[channel]?
-        return debug 1, ()-> return "Recieved a message on untracked channel #{channel}, #{method.name} #{JSON.stringify args}"
+        return debug 1, ()-> return "Received a message on untracked channel #{channel}, #{method.name} #{JSON.stringify args}"
       if !@channels[channel]._onChannelMethod?
         return debug 1, ()-> return "Channel #{channel} has no _onChannelMethod"
       @channels[channel]._onChannelMethod(channel, method, args)

@@ -1,4 +1,4 @@
-# Temprary Channel
+# Temporary Channel
 debug          = require('./config').debug('amqp:TemporaryChannel')
 Channel        = require('./Channel')
 

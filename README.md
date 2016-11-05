@@ -259,7 +259,7 @@ amqp = new AMQP ()->
 Errors will be emitted from the consumer if we can not consumer from that queue anymore.  For example if you're consuming a autoDelete queue and you reconnect that queue will be gone.  It will return the raw error message with code as the message.
 
 #### consumer Event: cancel
-The cancel event will be emitted from the consumer if we recieve a server initiated "basic.cancel".  For this to happen you must
+The cancel event will be emitted from the consumer if we receive a server initiated "basic.cancel".  For this to happen you must
 let the server know you are expecting a cancel, you do this by specifying clientProperties on connect. `clientProperties: { capabilities: { consumer_cancel_notify: true }}`  https://www.rabbitmq.com/consumer-cancel.html
 
 #### consumer.setQos(prefetchCount, [callback])
