@@ -1,7 +1,7 @@
 amqp-coffee
 ===========
 
-[![Build Status](https://travis-ci.org/dropbox/amqp-coffee.png?branch=master)](https://travis-ci.org/dropbox/amqp-coffee) Node.JS AMQP 0.9.1 Client
+[![Build Status](https://travis-ci.org/dropbox/amqp-coffee.svg?branch=master)](https://travis-ci.org/dropbox/amqp-coffee) Node.JS AMQP 0.9.1 Client
 
 ## Sample
 
