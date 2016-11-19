@@ -2,7 +2,7 @@ should  = require('should')
 async    = require('async')
 _        = require('underscore')
 proxy    = require('./proxy')
-uuid = require('node-uuid').v4
+uuid = require('uuid').v4
 
 AMQP = require('src/amqp')
 
