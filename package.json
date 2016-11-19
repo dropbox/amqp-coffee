@@ -24,7 +24,7 @@
     "async": "*",
     "bson": "~0.4.21",
     "debug": "*",
-    "node-uuid": "*",
+    "uuid": "^3.0.0",
     "underscore": "*"
   },
   "devDependencies": {
