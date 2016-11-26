@@ -24,7 +24,6 @@
     "async": "*",
     "bson": "~0.4.21",
     "debug": "*",
-    "node-uuid": "*",
     "underscore": "*"
   },
   "devDependencies": {
@@ -32,7 +31,8 @@
     "istanbul": "0.1.43",
     "jscoverage": "0.3.8",
     "mocha": "2.5.3",
-    "should": "*"
+    "should": "*",
+    "uuid": "^3.0.0"
   },
   "repository": {
     "type": "git",
