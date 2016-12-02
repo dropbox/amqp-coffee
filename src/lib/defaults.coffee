@@ -28,6 +28,7 @@ module.exports =
     connectTimeout: 30000 # in ms
     channelMax: 0 # unlimited
     frameMax: MaxFrameSize
+    noDelay: true # disable Nagle's algorithm by default
 
     temporaryChannelTimeout: 2000 # in ms
     temporaryChannelTimeoutCheck: 1000 # in ms
