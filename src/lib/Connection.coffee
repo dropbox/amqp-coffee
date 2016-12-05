@@ -132,6 +132,9 @@ class Connection extends EventEmitter
         else
           @connection = net.connect @connectionOptions.port, @connectionOptions.host
           setupConnectionListeners()
+        
+        if @connectionOptions.noDelay
+          @connection.setNoDelay()
 
         # start listening for timeouts
 
