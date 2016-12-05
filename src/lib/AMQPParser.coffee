@@ -148,7 +148,7 @@ class AMQPParser extends EventEmitter
     parserError = new Error(error)
     parserError.code = 'parser'
 
-    @emit 'error', parserError
+    @connection.emit 'error', parserError
     @frameHeader.used = 0
     return @header
 
