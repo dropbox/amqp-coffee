@@ -29,7 +29,6 @@ module.exports =
     channelMax: 0 # unlimited
     frameMax: MaxFrameSize
     noDelay: true # disable Nagle's algorithm by default
-    ignoreOversizeFrames: false # if we recieve a oversize frame continue could lead to out of memory issues
 
     temporaryChannelTimeout: 2000 # in ms
     temporaryChannelTimeoutCheck: 1000 # in ms

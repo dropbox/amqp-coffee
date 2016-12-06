@@ -29,6 +29,8 @@ describe 'Queue', () ->
           should.not.exist e
           next()
 
+      (next)->
+        queue.delete(next)
 
     ], done
 
@@ -307,6 +309,9 @@ describe 'Queue', () ->
           should.not.exist e
           next()
 
+      (next)->
+        queue.delete(next)
+
     ], done
 
 
@@ -334,6 +339,10 @@ describe 'Queue', () ->
           next()
 
         setTimeout channel.close, 1
+
+      (next)->
+        queue.delete(next)
+
 
     ], done
 
@@ -428,6 +437,9 @@ describe 'Queue', () ->
           should.not.exist e
           next()
 
+      (next)->
+        queue.delete(next)
+
     ], done
 
 
@@ -490,6 +502,10 @@ describe 'Queue', () ->
           openChannels.should.eql 1
           next()
         , 500
+
+      (next)->
+        queue.delete(next)
+
     ], done
 
 
