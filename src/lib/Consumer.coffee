@@ -217,7 +217,7 @@ class Consumer extends Channel
 
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->
-    debug 3, ()->return "_onContentHeader #{properties}"
+    debug 3, ()->return "_onContentHeader #{JSON.stringify properties} #{size}"
     @incomingMessage = _.extend @incomingMessage, {weight, properties, size}
 
     # if we're only expecting one packet lets just copy the buffer when we get it
@@ -226,16 +226,20 @@ class Consumer extends Channel
       @incomingMessage.data      = new Buffer(size)
       @incomingMessage.data.used = 0
 
+    if size == 0
+      @_onContent(channel, new Buffer(0))
+
   _onContent: (channel, data)=>
     if !@incomingMessage.data? and @incomingMessage.size is data.length
       # if our size is equal to the data we have, just replace the data object
       @incomingMessage.data = data
+
     else
       # if there are multiple packets just copy the data starting from the last used bit.
       data.copy(@incomingMessage.data, @incomingMessage.data.used)
       @incomingMessage.data.used += data.length
 
-    if @incomingMessage.data.used >= @incomingMessage.size
+    if @incomingMessage.data.used >= @incomingMessage.size || @incomingMessage.size == 0
       message = _.clone @incomingMessage
       message.raw = @incomingMessage.data
 
@@ -272,6 +276,14 @@ class Consumer extends Channel
             catch e
               console.error e
               return message.raw
+        }
+
+
+      else if @incomingMessage.size == 0 and @incomingMessage.properties?.contentType is "application/undefined"
+        # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
+        Object.defineProperty message, "data", {
+          get: ()=>
+            return undefined
         }
 
 

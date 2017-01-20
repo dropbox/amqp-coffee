@@ -799,7 +799,7 @@ describe 'Consumer', () ->
           should.exist err
           err.code.should.eql "basicCancel"
           done()
-  
+
         queueObj.delete(next)
 
     ], (err, res)->
@@ -1174,3 +1174,98 @@ describe 'Consumer', () ->
           next()
     ]
 
+  it 'test we can consume a undefined message 856', (done)->
+    amqp = null
+    queue = uuid()
+    consumer = null
+
+    messageProcessor = (m)->
+      (m.data == undefined).should.eql true
+      consumer.close()
+
+      done()
+
+    async.series [
+      (next)->
+        amqp = new AMQP { host:'localhost' }, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue}, (e,q)->
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+      (next)->
+        amqp.publish "amq.direct", queue, undefined, {confirm: true}, next
+
+      (next)->
+        consumer = amqp.consume queue, {}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+    ]
+
+
+  it 'test we can consume a null message 857', (done)->
+    amqp = null
+    queue = uuid()
+    consumer = null
+
+    messageProcessor = (m)->
+      (m.data == null).should.eql true
+      consumer.close()
+
+      done()
+
+    async.series [
+      (next)->
+        amqp = new AMQP { host:'localhost' }, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue}, (e,q)->
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+      (next)->
+        amqp.publish "amq.direct", queue, null, {confirm: true}, next
+
+      (next)->
+        consumer = amqp.consume queue, {}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+    ]
+
+
+  it 'test we can consume a zero length message 858', (done)->
+    amqp = null
+    queue = uuid()
+    consumer = null
+
+    messageProcessor = (m)->
+      zeroLengthBuffer = new Buffer(0)
+      (m.data.toString() == zeroLengthBuffer.toString()).should.eql true
+      consumer.close()
+
+      done()
+
+    async.series [
+      (next)->
+        amqp = new AMQP { host:'localhost' }, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue}, (e,q)->
+          q.declare ()->
+            q.bind "amq.direct", queue, next
+
+      (next)->
+        amqp.publish "amq.direct", queue, new Buffer(0), {confirm: true}, next
+
+      (next)->
+        consumer = amqp.consume queue, {}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+    ]
