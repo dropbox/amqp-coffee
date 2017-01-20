@@ -83,6 +83,11 @@ class Publisher extends Channel
       # data = BSON.serialize data
       # options.contentType = 'application/bson'
 
+    else if data is undefined
+      data = new Buffer(0)
+      options.contentType = 'application/undefined'
+
+
     # increment this as the final step before publishing, to make sure we're in sync with the server
     thisSequenceNumber = @seq++ if @confirm
 

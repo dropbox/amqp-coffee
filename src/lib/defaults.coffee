@@ -11,7 +11,7 @@ module.exports =
   defaults :
     defaultExchangeName: ''
     amqp  : 5672
-    amqps : 5671 # NOT SUPPORTED
+    amqps : 5671
 
   connection:
     host: "localhost"

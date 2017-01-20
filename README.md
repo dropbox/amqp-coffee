@@ -78,6 +78,7 @@ The `connectionOptions` argument should be an object which specifies:
 * `ssl`: false
 * `sslOptions` : {} # tls options like cert, key, ca, secureProtocol, passphrase
 * `temporaryChannelTimeout`: 2000 # in ms, temporary channels are used to setup queues, bindings, and exchanges. If you are frequently tearing down and setting up new queues it could make sense to make this longer.
+* `noDelay`: true # disable Nagle's algorithm by default
 
 Host Examples
 ```coffeescript

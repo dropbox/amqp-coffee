@@ -51,9 +51,11 @@ class AMQPParser extends EventEmitter
       @frameSize     = parseIntFromBuffer(@frameHeader,4)
 
       if @frameSize > @connection.frameMax
-        return @error "Oversize frame #{@frameSize}"
+        @connection?.connection?.destroy?()
+        return @error "#{@frameChannel} Oversize frame size #{@frameSize} of max #{@connection.frameMax}"
 
-      # # setup our frameBuffer
+
+      # setup our frameBuffer
       @frameBuffer = new Buffer(@frameSize)
       @frameBuffer.used = 0
 
@@ -148,7 +150,7 @@ class AMQPParser extends EventEmitter
     parserError = new Error(error)
     parserError.code = 'parser'
 
-    @emit 'error', parserError
+    @connection.emit 'error', parserError
     @frameHeader.used = 0
     return @header
 
