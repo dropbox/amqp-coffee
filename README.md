@@ -125,6 +125,7 @@ The `queueOptions` argument should be an object which specifies:
 * `exclusive`: default: false. The queue can only be used by the current connection.
 * `durable`: default: false
 * `passive`: default: false.  The queue creation will not fail if the queue already exists.
+* `arguments`: default: {}. Pass queue configuartion arguments, e.g. `'x-dead-letter-exchange'`.
 
 Both queues and exchanges use "temporary" channels, which are channels amqp-coffee manages specifically for declaring, binding, unbinding, and deleting queues and exchanges.  After 2 seconds of inactivity these channels are closed, and reopened on demand.
 
