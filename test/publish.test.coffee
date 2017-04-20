@@ -485,4 +485,31 @@ describe 'Publisher', () ->
       # console.error "DONE AT THE END HERE", err, res
       should.not.exist err
 
+  it 'test we can publish a message with any contentType', (done)->
+    amqp = null
+    queue = uuid()
+    testData = "test message"
+    testContentType = 'plain\text'
 
+    messageProcessor = (m)->
+      m.data.should.eql testData
+      m.contentType.should.eql testContentType
+      done()
+
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.publish "amq.direct", queue, testData, {confirm:true, contentType:testContentType}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.consume queue, {}, messageProcessor, (e,r)->
+          should.not.exist e
+          next()
+
+    ], done
