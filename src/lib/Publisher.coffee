@@ -64,28 +64,31 @@ class Publisher extends Channel
       else
         return cb("Channel is closed and will not re-open? #{@state} #{@confirm} #{@confirmState}") if cb
 
-    # data must be a buffer
-    if typeof data is 'string'
-      options.contentType = 'string/utf8'
-      data = new Buffer(data, 'utf8')
+    # check type of data only if options.contentType was not specified
+    if !options.contentType?
 
-    else if typeof data is 'object' and !(data instanceof Buffer)
-      if options.contentType?
-        debug 1, ()=> return "contentType specified but data isn't a buffer, #{JSON.stringify options}"
-        if cb?
-          cb("contentType specified but data isn't a buffer")
-          return
+      # data must be a buffer
+      if typeof data is 'string'
+        options.contentType = 'string/utf8'
+        data = new Buffer(data, 'utf8')
 
-      # default use JSON
-      data = new Buffer(JSON.stringify(data), 'utf8')
-      options.contentType = 'application/json'
+      else if typeof data is 'object' and !(data instanceof Buffer)
+        if options.contentType?
+          debug 1, ()=> return "contentType specified but data isn't a buffer, #{JSON.stringify options}"
+          if cb?
+            cb("contentType specified but data isn't a buffer")
+            return
 
-      # data = BSON.serialize data
-      # options.contentType = 'application/bson'
+        # default use JSON
+        data = new Buffer(JSON.stringify(data), 'utf8')
+        options.contentType = 'application/json'
 
-    else if data is undefined
-      data = new Buffer(0)
-      options.contentType = 'application/undefined'
+        # data = BSON.serialize data
+        # options.contentType = 'application/bson'
+
+      else if data is undefined
+        data = new Buffer(0)
+        options.contentType = 'application/undefined'
 
 
     # increment this as the final step before publishing, to make sure we're in sync with the server
