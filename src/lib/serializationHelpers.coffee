@@ -148,7 +148,7 @@ exports.serializeValue = serializeValue = (b, value)->
 
 exports.serializeTable = serializeTable = (b, object)->
   if (typeof(object) != "object")
-    throw new Error("param must be an object");
+    throw new Error("param must be an object")
 
 
   # Save our position so that we can go back and write the length of this table
@@ -175,7 +175,7 @@ exports.serializeArray = serializeArray = (b, arr)->
   startIndex = b.used
 
   for i in arr
-    serializeValue(b, i);
+    serializeValue(b, i)
 
   endIndex = b.used
   b.used = lengthIndex
@@ -203,7 +203,7 @@ exports.serializeFields = serializeFields = (buffer, fields, args, strict)->
           # defaults noWait to false
           args[field.name] = false
         else
-          throw new Error("Missing field '" + field.name + "' of type '" + domain + "' while executing AMQP method '" + arguments.callee.caller.arguments[1].name + "'");
+          throw new Error("Missing field '" + field.name + "' of type '" + domain + "' while executing AMQP method '" + arguments.callee.caller.arguments[1].name + "'")
       else
         continue
 
@@ -211,31 +211,31 @@ exports.serializeFields = serializeFields = (buffer, fields, args, strict)->
     switch domain
       when 'bit'
         if (typeof(param) != "boolean")
-          throw new Error("Unmatched field " + JSON.stringify(field));
+          throw new Error("Unmatched field " + JSON.stringify(field))
 
 
         if param then bitField |= (1 << bitIndex)
         bitIndex++
 
         if (!fields[i+1] || fields[i+1].domain != 'bit')
-          # debug('SET bit field ' + field.name + ' 0x' + bitField.toString(16));
-          buffer[buffer.used++] = bitField;
-          bitField = 0;
-          bitIndex = 0;
+          # debug('SET bit field ' + field.name + ' 0x' + bitField.toString(16))
+          buffer[buffer.used++] = bitField
+          bitField = 0
+          bitIndex = 0
 
 
       when 'octet'
         if (typeof(param) != "number" || param > 0xFF)
           throw new Error("Unmatched field " + JSON.stringify(field))
 
-        buffer[buffer.used++] = param;
+        buffer[buffer.used++] = param
 
       when 'short'
         if (typeof(param) != "number" || param > 0xFFFF)
           throw new Error("Unmatched field " + JSON.stringify(field))
 
         serializeInt(buffer, 2, param)
-        break;
+        break
 
       when 'long'
         if (typeof(param) != "number" || param > 0xFFFFFFFF)
@@ -244,7 +244,7 @@ exports.serializeFields = serializeFields = (buffer, fields, args, strict)->
         serializeInt(buffer, 4, param)
 
       when 'timestamp', 'longlong'
-        serializeInt(buffer, 8, param);
+        serializeInt(buffer, 8, param)
 
       when 'shortstr'
         if (typeof(param) != "string" || param.length > 0xFF)
@@ -266,7 +266,7 @@ exports.serializeFields = serializeFields = (buffer, fields, args, strict)->
 
 
 exports.isBigInt = isBigInt = (value)->
-  return value > 0xffffffff;
+  return value > 0xffffffff
 
 
 exports.getCode = getCode = (dev)->

@@ -5,9 +5,6 @@ defaults  = require('./defaults')
 
 _         = require('underscore')
 
-bson    = require('bson')
-BSON    = new bson.BSONPure.BSON()
-
 { methodTable, classes, methods } = require('./config').protocol
 
 class Publisher extends Channel
@@ -26,7 +23,7 @@ class Publisher extends Channel
 
   confirmMode: (cb)=>
     @confirmState = 'opening'
-    @taskPush methods.confirmSelect, {noWait:false}, methods.confirmSelectOk, ()=>
+    @taskPush methods.confirmSelect, {noWait:false}, methods.confirmSelectOk, () =>
       @confirmState = 'open'
       @confirm = true
       @seq     = 1
@@ -58,7 +55,7 @@ class Publisher extends Channel
       if @state is "opening" or @state is "closed" or (@confirm and @confirmState is 'opening')
 
         if @confirm then waitFor = 'confirm' else waitFor = 'open'
-        return @once waitFor, ()=>
+        return @once waitFor, () =>
           @publish(exchange, routingKey, data, options, cb)
 
       else
@@ -67,17 +64,17 @@ class Publisher extends Channel
     # data must be a buffer
     if typeof data is 'string'
       options.contentType = 'string/utf8'
-      data = new Buffer(data, 'utf8')
+      data = Buffer.from(data, 'utf8')
 
     else if typeof data is 'object' and !(data instanceof Buffer)
       if options.contentType?
-        debug 1, ()=> return "contentType specified but data isn't a buffer, #{JSON.stringify options}"
+        debug 1, () -> return "contentType specified but data isn't a buffer, #{JSON.stringify options}"
         if cb?
           cb("contentType specified but data isn't a buffer")
           return
 
       # default use JSON
-      data = new Buffer(JSON.stringify(data), 'utf8')
+      data = Buffer.from(JSON.stringify(data), 'utf8')
       options.contentType = 'application/json'
 
       # data = BSON.serialize data
@@ -104,10 +101,10 @@ class Publisher extends Channel
     @queuePublish methods.basicPublish, data, options
 
     if @confirm and cb?
-      debug 4, ()=> return JSON.stringify {exchange, routingKey, data, options, thisSequenceNumber}
+      debug 4, () -> return JSON.stringify {exchange, routingKey, data, options, thisSequenceNumber}
       @_waitForSeq thisSequenceNumber, cb
     else
-      debug 4, ()=> return JSON.stringify {exchange, routingKey, data, options, noConfirm: true}
+      debug 4, () -> return JSON.stringify {exchange, routingKey, data, options, noConfirm: true}
       _.defer(cb) if cb?
 
 
@@ -118,7 +115,7 @@ class Publisher extends Channel
     switch method
       when methods.basicAck
         if @confirm
-          # debug 4, ()=> return JSON.stringify args
+          # debug 4, () => return JSON.stringify args
           @_gotSeq args.deliveryTag, args.multiple
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->

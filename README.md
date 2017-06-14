@@ -1,7 +1,12 @@
 amqp-coffee
 ===========
 
-[![Build Status](https://travis-ci.org/dropbox/amqp-coffee.svg?branch=master)](https://travis-ci.org/dropbox/amqp-coffee) Node.JS AMQP 0.9.1 Client
+[![Build Status](https://travis-ci.org/microfleet/amqp-coffee.svg?branch=master)](https://travis-ci.org/microfleet/amqp-coffee) Node.JS AMQP 0.9.1 Client
+
+## Notice
+
+This is a fork of [dropbox/amqp-coffee](https://github.com/dropbox/amqp-coffee) with a few bugs fixed and removed support for deprecated method
+calls
 
 ## Sample
 
@@ -214,8 +219,7 @@ New in 0.1.20 if you set the mandatory or immediate flag with the confirm flag w
   * `mandatory`: false
   * `immediate`: false
   * `contentType`: 'application/octet-stream'
-
-
+  * `priority`: 0
 
 ### connection.consume(queueName, options, messageListener, [callback])
 

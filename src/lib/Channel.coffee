@@ -36,7 +36,7 @@ class Channel extends EventEmitter
       @connection.connectionOptions.temporaryChannelTimeoutCheck = 100
 
     if !@channelTracker?
-      @channelTracker = setInterval ()=>
+      @channelTracker = setInterval () =>
         if @lastChannelAccess < (Date.now() - @connection.connectionOptions.temporaryChannelTimeout)
           debug 4, ()->return "Closing channel due to inactivity"
           @close(true)
@@ -178,7 +178,7 @@ class Channel extends EventEmitter
       else
         if @connection.channelManager.isChannelClosed(@channel)
           @connection.channelManager.channelReassign(@)
-        @once 'open', ()=>
+        @once 'open', () =>
           @_taskWorker(task, done)
 
     else

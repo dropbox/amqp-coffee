@@ -28,7 +28,7 @@ class ChannelManager
 
     @channelCount = @connection.channelCount
 
-  nextChannelNumber: ()=>
+  nextChannelNumber: () =>
     @channelCount++
     nextChannelNumber = @channelCount
     return nextChannelNumber

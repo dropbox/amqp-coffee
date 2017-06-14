@@ -7,8 +7,8 @@ _         = require('underscore')
 async     = require('async')
 defaults  = require('./defaults')
 
-bson    = require('bson')
-BSON    = new bson.BSONPure.BSON()
+BSON    = require('bson')
+bson    = new BSON()
 
 { methodTable, classes, methods } = require('./config').protocol
 { MaxEmptyFrameSize } = require('./config').constants
@@ -26,7 +26,7 @@ CONSUMER_STATES_CLOSED = [CONSUMER_STATE_CLOSED, CONSUMER_STATE_USER_CLOSED, CON
 class Consumer extends Channel
 
   constructor: (connection, channel)->
-    debug 2, ()=>return "channel open for consumer #{channel}"
+    debug 2, () -> return "channel open for consumer #{channel}"
     super(connection, channel)
     @consumerState = CONSUMER_STATE_CLOSED
     @messageHandler  = null
@@ -45,7 +45,7 @@ class Consumer extends Channel
 
     @consumerTag = options.consumerTag ? "#{os.hostname()}-#{process.pid}-#{Date.now()}"
 
-    debug 2, ()=>return "Consuming to #{queueName} on channel #{@channel} #{@consumerTag}"
+    debug 2, () =>return "Consuming to #{queueName} on channel #{@channel} #{@consumerTag}"
 
     @consumerState = CONSUMER_STATE_OPENING
 
@@ -78,7 +78,7 @@ class Consumer extends Channel
     return @
 
   close: (cb)=>
-    @cancel ()=>
+    @cancel () =>
       @consumerState = CONSUMER_STATE_USER_CLOSED
       super()
       cb?()
@@ -144,13 +144,13 @@ class Consumer extends Channel
         next()
     ], cb
 
-  _basicConsumePreflight: ()=>
+  _basicConsumePreflight: () =>
     return @consumerState != CONSUMER_STATE_OPEN
 
-  _consumerStateOpenPreflight: ()=>
+  _consumerStateOpenPreflight: () =>
     return @consumerState == CONSUMER_STATE_OPEN
 
-  _channelOpen: ()=>
+  _channelOpen: () =>
     if @consumeOptions? and @consumerState is CONSUMER_STATE_CONNECTION_CLOSED then @_consume()
 
   _channelClosed: (reason)=>
@@ -223,7 +223,7 @@ class Consumer extends Channel
     # if we're only expecting one packet lets just copy the buffer when we get it
     # otherwise lets create a new incoming data buffer and pre alloc the space
     if size > @connection.frameMax - MaxEmptyFrameSize
-      @incomingMessage.data      = new Buffer(size)
+      @incomingMessage.data      = Buffer.allocUnsafe(size)
       @incomingMessage.data.used = 0
 
     if size == 0
@@ -248,7 +248,7 @@ class Consumer extends Channel
 
         # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
         Object.defineProperty message, "data", {
-          get: ()=>
+          get: () ->
             try
               return JSON.parse message.raw.toString()
             catch e
@@ -259,9 +259,9 @@ class Consumer extends Channel
       else if @incomingMessage.properties?.contentType is "application/bson"
         # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
         Object.defineProperty message, "data", {
-          get: ()=>
+          get: () ->
             try
-              return BSON.deserialize message.raw
+              return bson.deserialize message.raw
             catch e
               console.error e
               return message.raw
@@ -270,7 +270,7 @@ class Consumer extends Channel
       else if @incomingMessage.properties?.contentType is "string/utf8"
         # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
         Object.defineProperty message, "data", {
-          get: ()=>
+          get: () ->
             try
               return message.raw.toString('utf8')
             catch e
@@ -282,14 +282,14 @@ class Consumer extends Channel
       else if @incomingMessage.size == 0 and @incomingMessage.properties?.contentType is "application/undefined"
         # we use defineProperty here because we want to keep our original message intact and dont want to pass around a special message
         Object.defineProperty message, "data", {
-          get: ()=>
+          get: () ->
             return undefined
         }
 
 
       else
         Object.defineProperty message, "data", {
-          get: ()=>
+          get: () ->
             return message.raw
         }
 
