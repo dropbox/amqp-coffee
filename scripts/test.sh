@@ -96,7 +96,7 @@ $ROOT/scripts/compile.sh
 if $COVERAGE; then
   _MOCHA=$(dirname $(/usr/bin/env node -e "console.log(require.resolve('mocha'))"))/bin/_mocha
   ISTANBUL=$(dirname $(/usr/bin/env node -e "console.log(require.resolve('istanbul'))"))/lib/cli.js
-  AMQP_TEST=1 NODE_PATH=$ROOT/bin $ISTANBUL cover $_MOCHA -- --require 'coffee-script' --compilers coffee:coffee-script --reporter spec --ui bdd --grep "$GREP" $TESTS
+  AMQP_TEST=1 NODE_PATH=$ROOT/bin $ISTANBUL cover $_MOCHA -- --require 'coffee-script/register' --compilers coffee:coffee-script --reporter spec --ui bdd --grep "$GREP" $TESTS
   open $ROOT/coverage/lcov-report/index.html
 
   # rm -rf $ROOT/bin-cov
@@ -106,7 +106,7 @@ if $COVERAGE; then
   # open $ROOT/coverage.html
 else
 
-  AMQP_TEST=1 NODE_PATH=$ROOT/bin $MOCHA --require 'coffee-script' --compilers coffee:coffee-script --reporter spec --ui bdd --timeout 10000 --grep "$GREP" $TESTS
+  AMQP_TEST=1 NODE_PATH=$ROOT/bin $MOCHA --require 'coffee-script/register' --compilers coffee:coffee-script --reporter spec --ui bdd --timeout 10000 --grep "$GREP" $TESTS
 
 fi
 

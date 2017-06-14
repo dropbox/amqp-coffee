@@ -7,8 +7,8 @@ uuid = require('uuid').v4
 AMQP = require('src/amqp')
 
 
-bson    = require('bson')
-BSON    = new bson.BSONPure.BSON()
+BSON    = require('bson')
+bson    = new BSON()
 
 { MaxFrameSize, FrameType, HeartbeatFrame }   = require('../src/lib/config').constants
 
@@ -378,7 +378,7 @@ describe 'Consumer', () ->
 
       (next)->
         # testData = BSON.serialize testData
-        amqp.publish "amq.direct", queue, BSON.serialize(testData), {contentType:"application/bson", confirm: true}, next
+        amqp.publish "amq.direct", queue, bson.serialize(testData), {contentType:"application/bson", confirm: true}, next
     ], (e,r)->
       should.not.exist e
 

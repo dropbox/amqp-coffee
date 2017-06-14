@@ -14,10 +14,10 @@ class AMQPParser extends EventEmitter
     @connection = connection
 
     # send the start of the handshake....
-    @connection.connection.write("AMQP" + String.fromCharCode(0,0,9,1));
+    @connection.connection.write("AMQP" + String.fromCharCode(0,0,9,1))
 
     # set up some defaults, for reuse
-    @frameHeader = new Buffer(7)
+    @frameHeader = Buffer.allocUnsafe(7)
     @frameHeader.used = 0
     @frameHeader.length = @frameHeader.length
 
@@ -56,7 +56,7 @@ class AMQPParser extends EventEmitter
 
 
       # setup our frameBuffer
-      @frameBuffer = new Buffer(@frameSize)
+      @frameBuffer = Buffer.allocUnsafe(@frameSize)
       @frameBuffer.used = 0
 
       # reset out frameHeader

@@ -18,7 +18,7 @@ module.exports =
       method: 'GET'
       headers: {
         Host: host
-        Authorization: 'Basic ' + new Buffer(connection.connectionOptions.login + ':' + connection.connectionOptions.password).toString('base64')
+        Authorization: 'Basic ' + Buffer.from(connection.connectionOptions.login + ':' + connection.connectionOptions.password).toString('base64')
       }
       agent: false
     }

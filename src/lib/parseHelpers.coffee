@@ -33,28 +33,28 @@ module.exports =
 
 
   parseFields: (buffer, fields)->
-    args = {};
+    args = {}
 
-    bitIndex = 0;
+    bitIndex = 0
 
     for field, i in fields
-      #debug("parsing field " + field.name + " of type " + field.domain);
+      #debug("parsing field " + field.name + " of type " + field.domain)
       switch field.domain
         when 'bit'
           # 8 bits can be packed into one octet.
           # XXX check if bitIndex greater than 7?
 
-          value = (buffer[buffer.read] & (1 << bitIndex)) ? true : false;
+          value = (buffer[buffer.read] & (1 << bitIndex)) ? true : false
 
           if (fields[i+1] && fields[i+1].domain == 'bit')
-            bitIndex++;
+            bitIndex++
 
           else
-            bitIndex = 0;
-            buffer.read++;
+            bitIndex = 0
+            buffer.read++
 
         when 'octet'
-          value = buffer[buffer.read++];
+          value = buffer[buffer.read++]
 
         when 'short'
           value = module.exports.parseIntFromBuffer(buffer, 2)
@@ -78,12 +78,12 @@ module.exports =
 
 
         else
-          throw new Error("Unhandled parameter type " + field.domain);
+          throw new Error("Unhandled parameter type " + field.domain)
 
-      #debug("got " + value);
-      args[field.name] = value;
+      #debug("got " + value)
+      args[field.name] = value
 
-    return args;
+    return args
 
   parseShortString: (buffer)->
     length = buffer[buffer.read++]
@@ -108,61 +108,61 @@ module.exports =
   parseValue: (buffer)->
     switch (buffer[buffer.read++])
       when AMQPTypes.STRING
-        return module.exports.parseLongString(buffer);
+        return module.exports.parseLongString(buffer)
 
       when AMQPTypes.INTEGER
-        return module.exports.parseIntFromBuffer(buffer, 4);
+        return module.exports.parseIntFromBuffer(buffer, 4)
 
       when AMQPTypes.DECIMAL
-        dec = module.exports.parseIntFromBuffer(buffer, 1);
-        num = module.exports.parseIntFromBuffer(buffer, 4);
-        return num / (dec * 10);
+        dec = module.exports.parseIntFromBuffer(buffer, 1)
+        num = module.exports.parseIntFromBuffer(buffer, 4)
+        return num / (dec * 10)
 
       when AMQPTypes._64BIT_FLOAT
-        b = [];
+        b = []
         for i in [0...8]
-          b[i] = buffer[buffer.read++];
+          b[i] = buffer[buffer.read++]
 
-        return (new jspack(true)).Unpack('d', b);
+        return (new jspack(true)).Unpack('d', b)
 
       when AMQPTypes._32BIT_FLOAT
-        b = [];
+        b = []
         for i in [0...4]
-          b[i] = buffer[buffer.read++];
+          b[i] = buffer[buffer.read++]
 
-        return (new jspack(true)).Unpack('f', b);
+        return (new jspack(true)).Unpack('f', b)
 
       when AMQPTypes.TIME
-        int = module.exports.parseIntFromBuffer(buffer, 8);
-        return (new Date()).setTime(int * 1000);
+        int = module.exports.parseIntFromBuffer(buffer, 8)
+        return (new Date()).setTime(int * 1000)
 
       when AMQPTypes.HASH
-        return module.exports.parseTable(buffer);
+        return module.exports.parseTable(buffer)
 
       when AMQPTypes.SIGNED_64BIT
-        return module.exports.parseIntFromBuffer(buffer, 8);
+        return module.exports.parseIntFromBuffer(buffer, 8)
 
       when AMQPTypes.BOOLEAN
-        return (module.exports.parseIntFromBuffer(buffer, 1) > 0);
+        return (module.exports.parseIntFromBuffer(buffer, 1) > 0)
 
       when AMQPTypes.BYTE_ARRAY
-        len = module.exports.parseIntFromBuffer(buffer, 4);
-        buf = new Buffer(len);
-        buffer.copy(buf, 0, buffer.read, buffer.read + len);
-        buffer.read += len;
-        return buf;
+        len = module.exports.parseIntFromBuffer(buffer, 4)
+        buf = Buffer.allocUnsafe(len)
+        buffer.copy(buf, 0, buffer.read, buffer.read + len)
+        buffer.read += len
+        return buf
 
       when AMQPTypes.ARRAY
-        len = module.exports.parseIntFromBuffer(buffer, 4);
-        end = buffer.read + len;
-        arr = new Array();
+        len = module.exports.parseIntFromBuffer(buffer, 4)
+        end = buffer.read + len
+        arr = new Array()
 
         while (buffer.read < end)
-          arr.push(module.exports.parseValue(buffer));
+          arr.push(module.exports.parseValue(buffer))
 
-        return arr;
+        return arr
 
       else
-        throw new Error("Unknown field value type " + buffer[buffer.read-1]);
+        throw new Error("Unknown field value type " + buffer[buffer.read-1])
 
 

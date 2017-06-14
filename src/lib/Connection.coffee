@@ -20,6 +20,7 @@ ChannelManager  = require('./ChannelManager')
 if process.env.AMQP_TEST?
   defaults.connection.reconnectDelayTime = 100
 
+hasOwnProperty = Object.prototype.hasOwnProperty
 
 class Connection extends EventEmitter
 
@@ -59,7 +60,7 @@ class Connection extends EventEmitter
     @channelMax = @connectionOptions.channelMax
     @frameMax   = @connectionOptions.frameMax
 
-    @sendBuffer = new Buffer(@frameMax)
+    @sendBuffer = Buffer.allocUnsafe(@frameMax)
 
     @channelManager = new ChannelManager(@)
 
@@ -99,29 +100,29 @@ class Connection extends EventEmitter
 
       (next)=>
 
-        setupConnectionListeners = ()=>
+        setupConnectionListeners = () =>
           if @connectionOptions.ssl
             connectionEvent = 'secureConnect'
           else
             connectionEvent = 'connect'
 
-          @connection.once connectionEvent, ()=> @_connectedFirst()
-          @connection.on   connectionEvent, ()=> @_connected()
+          @connection.once connectionEvent, () => @_connectedFirst()
+          @connection.on   connectionEvent, () => @_connected()
           @connection.on   'error', @_connectionErrorEvent
           @connection.on   'close', @_connectionClosedEvent
 
         if @connectionOptions.ssl
           tlsOptions  = @connectionOptions.sslOptions ? {}
 
-          setupTlsConnection = ()=>
+          setupTlsConnection = () =>
             if @connection?
               @connection.removeAllListeners()
 
               if @connection?.socket?
                 @connection.socket.end()
 
-            @connection = tls.connect @connectionOptions.port, @connectionOptions.host, tlsOptions, ()=>
-              @connection.on 'error', ()=>
+            @connection = tls.connect @connectionOptions.port, @connectionOptions.host, tlsOptions, () =>
+              @connection.on 'error', () =>
                 @connection.emit 'close'
 
             @connection.connect = setupTlsConnection
@@ -132,7 +133,7 @@ class Connection extends EventEmitter
         else
           @connection = net.connect @connectionOptions.port, @connectionOptions.host
           setupConnectionListeners()
-        
+
         if @connectionOptions.noDelay
           @connection.setNoDelay()
 
@@ -141,7 +142,7 @@ class Connection extends EventEmitter
         if @connectionOptions.connectTimeout? and !@connectionOptions.reconnect
           clearTimeout(@_connectTimeout)
 
-          @_connectTimeout = setTimeout ()=>
+          @_connectTimeout = setTimeout () =>
             debug 1, ()-> return "Connection timeout triggered"
             @close()
             cb?({code:'T', message:'Connection Timeout', host:@connectionOptions.host, port:@connectionOptions.port})
@@ -158,7 +159,7 @@ class Connection extends EventEmitter
     super()
     return @
 
-  updateConnectionOptionsHostInformation: ()=>
+  updateConnectionOptionsHostInformation: () =>
     @connectionOptions.host  = @connectionOptions.hosts[@connectionOptions.hosti].host
     @connectionOptions.port  = @connectionOptions.hosts[@connectionOptions.hosti].port
 
@@ -209,7 +210,7 @@ class Connection extends EventEmitter
     # @connection.removeAllListeners() TODO evaluate this
     @_clearHeartbeatTimer()
 
-    _.defer ()=>
+    _.defer () =>
       @state = 'destroyed'
 
       if cb? then cb = _.once cb
@@ -222,26 +223,26 @@ class Connection extends EventEmitter
 
       state = {write: @connection.writable, read: @connection.readable}
 
-      forceConnectionClose = setTimeout ()=>
+      forceConnectionClose = setTimeout () =>
         @connection.destroy()
         cb?()
       , 1000
 
-      @connection.once 'close', ()=>
+      @connection.once 'close', () ->
         clearTimeout forceConnectionClose
         cb?()
 
 
   # TESTING OUT OF ORDER OPERATION
-  crashOOO: ()=>
+  crashOOO: () =>
     if !process.env.AMQP_TEST? then return true
     # this will crash a channel forcing an out of order operation
     debug "Trying to crash connection by an oow op"
     @_sendBody @channel, new Buffer(100), {}
 
   # Service Called Functions
-  _connectedFirst: ()=>
-    debug 1, ()=> return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
+  _connectedFirst: () =>
+    debug 1, () => return "Connected to #{@connectionOptions.host}:#{@connectionOptions.port}"
 
   _connected: ()->
     clearTimeout(@_connectTimeout)
@@ -250,7 +251,7 @@ class Connection extends EventEmitter
 
   _connectionErrorEvent: (e, r)=>
     if @state isnt 'destroyed'
-      debug 1, ()=> return ["Connection Error ", e, r, @connectionOptions.host]
+      debug 1, () => return ["Connection Error ", e, r, @connectionOptions.host]
 
     # if we are to keep trying we wont callback until we're successful, or we've hit a timeout.
     if !@connectionOptions.reconnect
@@ -275,7 +276,7 @@ class Connection extends EventEmitter
       @state = 'reconnecting'
       debug 1, ()-> return "Connection closed reconnecting..."
 
-      _.delay ()=>
+      _.delay () =>
         # rotate hosts if we have multiple hosts
         if @connectionOptions.hosts.length > 1
           @connectionOptions.hosti = (@connectionOptions.hosti + 1) % @connectionOptions.hosts.length
@@ -285,7 +286,7 @@ class Connection extends EventEmitter
       , @connectionOptions.reconnectDelayTime
 
 
-  _reestablishChannels: ()=>
+  _reestablishChannels: () =>
     async.forEachSeries _.keys(@channels), (channel, done)=>
       if channel is "0" then done() else
         # check to make sure the channel is still around before attempting to reset it
@@ -293,7 +294,7 @@ class Connection extends EventEmitter
         if @channelManager.isChannelClosed(channel) then done() else
           @channels[channel].reset?(done)
 
-  _closed: ()=>
+  _closed: () =>
     @_clearHeartbeatTimer()
 
   # we should expect a heartbeat at least once every heartbeat interval x 2
@@ -302,36 +303,36 @@ class Connection extends EventEmitter
   # on initial connection we should start expecting heart beats
   # on disconnect or close we should stop expecting these.
   # on heartbeat received we should expect another
-  _receivedHeartbeat: ()=>
-    debug 4, ()=> return "♥ heartbeat"
+  _receivedHeartbeat: () =>
+    debug 4, () -> return "♥ heartbeat"
     @_resetHeartbeatTimer()
 
-  _resetAllHeartbeatTimers: ()=>
+  _resetAllHeartbeatTimers: () =>
     @_resetSendHeartbeatTimer()
     @_resetHeartbeatTimer()
 
-  _resetHeartbeatTimer: ()=>
-    debug 6, ()=> return "_resetHeartbeatTimer"
+  _resetHeartbeatTimer: () =>
+    debug 6, () -> return "_resetHeartbeatTimer"
     clearInterval @heartbeatTimer
     @heartbeatTimer = setInterval @_missedHeartbeat, @connectionOptions.heartbeat * 2
 
-  _clearHeartbeatTimer: ()=>
-    debug 6, ()=> return "_clearHeartbeatTimer"
+  _clearHeartbeatTimer: () =>
+    debug 6, () -> return "_clearHeartbeatTimer"
     clearInterval @heartbeatTimer
     clearInterval @sendHeartbeatTimer
     @heartbeatTimer = null
     @sendHeartbeatTimer = null
 
-  _resetSendHeartbeatTimer: ()=>
-    debug 6, ()=> return "_resetSendHeartbeatTimer"
+  _resetSendHeartbeatTimer: () =>
+    debug 6, () -> return "_resetSendHeartbeatTimer"
     clearInterval  @sendHeartbeatTimer
     @sendHeartbeatTimer = setInterval(@_sendHeartbeat, @connectionOptions.heartbeat)
 
-  _sendHeartbeat: ()=>
+  _sendHeartbeat: () =>
     @connection.write HeartbeatFrame
 
   # called directly in tests to simulate missed heartbeat
-  _missedHeartbeat: ()=>
+  _missedHeartbeat: () =>
     if @state is 'open'
       debug 1, ()-> return "We missed a heartbeat, destroying the connection."
       @connection.destroy()
@@ -360,11 +361,11 @@ class Connection extends EventEmitter
 
   _sendMethod: (channel, method, args)=>
     if channel isnt 0 and @state in ['opening', 'reconnecting']
-      return @once 'ready', ()=>
+      return @once 'ready', () =>
         @_sendMethod(channel, method, args)
 
 
-    debug 3, ()-> return "#{channel} < #{method.name}"# #{util.inspect args}"
+    debug 3, () -> return "#{channel} < #{method.name}"# #{util.inspect args}"
     b = @sendBuffer
 
     b.used = 0
@@ -377,29 +378,29 @@ class Connection extends EventEmitter
     serializeInt(b, 4, 0)
     startIndex = b.used
 
-    serializeInt(b, 2, method.classIndex);  # short, classId
-    serializeInt(b, 2, method.methodIndex); # short, methodId
+    serializeInt(b, 2, method.classIndex)  # short, classId
+    serializeInt(b, 2, method.methodIndex) # short, methodId
 
-    serializeFields(b, method.fields, args, true);
+    serializeFields(b, method.fields, args, true)
 
     endIndex = b.used
 
     # write in the frame length now that we know it.
     b.used = lengthIndex
-    serializeInt(b, 4, endIndex - startIndex);
+    serializeInt(b, 4, endIndex - startIndex)
     b.used = endIndex
 
-    b[b.used++] = 206; # constants Indicators.frameEnd;
+    b[b.used++] = 206 # constants Indicators.frameEnd;
 
     # we create this new buffer to make sure it doesn't get overwritten in a situation where we're backed up flushing to the network
-    methodBuffer = new Buffer(b.used)
+    methodBuffer = Buffer.allocUnsafe(b.used)
     b.copy(methodBuffer,0 ,0 ,b.used)
     @connection.write(methodBuffer)
     @_resetSendHeartbeatTimer()
 
   # Only used in sendBody
   _sendHeader: (channel, size, args)=>
-    debug 3, ()=> return "#{@id} #{channel} < header #{size}"# #{util.inspect args}"
+    debug 3, () => return "#{@id} #{channel} < header #{size}"# #{util.inspect args}"
     b = @sendBuffer
 
     classInfo = classes[60]
@@ -435,7 +436,7 @@ class Connection extends EventEmitter
         propertyFlags[Math.floor((i-1)/15)] |= 1 << 0
         propertyFlags.push 0
 
-      if args[field.name]
+      if hasOwnProperty.call(args, field.name)
         propertyFlags[Math.floor(i/15)] |= 1 <<(15-i)
 
     for propertyFlag in propertyFlags
@@ -445,10 +446,10 @@ class Connection extends EventEmitter
     serializeFields(b, classInfo.fields, args, false)
 
     #serializeTable(b, props);
-    bodyEnd = b.used;
+    bodyEnd = b.used
 
     # Go back to the header and write in the length now that we know it.
-    b.used = lengthStart;
+    b.used = lengthStart
     serializeInt(b, 4, bodyEnd - bodyStart)
     b.used = bodyEnd;
 
@@ -456,7 +457,7 @@ class Connection extends EventEmitter
     b[b.used++] = 206 # constants.frameEnd;
 
     # we create this new buffer to make sure it doesn't get overwritten in a situation where we're backed up flushing to the network
-    headerBuffer = new Buffer(b.used)
+    headerBuffer = Buffer.allocUnsafe(b.used)
     b.copy(headerBuffer,0 ,0 ,b.used)
     @connection.write(headerBuffer)
     @_resetSendHeartbeatTimer()
@@ -469,14 +470,14 @@ class Connection extends EventEmitter
       while offset < body.length
 
         length = Math.min((body.length - offset), @frameMax)
-        h      = new Buffer(7)
+        h      = Buffer.allocUnsafe(7)
         h.used = 0
 
         h[h.used++] = 3                     # constants.frameBody
         serializeInt(h, 2, channel)
         serializeInt(h, 4, length)
 
-        debug 3, ()=> return "#{@id} #{channel} < body #{offset}, #{offset+length} of #{body.length}"
+        debug 3, () => return "#{@id} #{channel} < body #{offset}, #{offset+length} of #{body.length}"
         @connection.write(h)
         @connection.write(body.slice(offset,offset+length))
         @connection.write(EndFrame)
@@ -546,7 +547,7 @@ class Connection extends EventEmitter
 
           if args.frameMax? and args.frameMax < @frameMax
             @frameMax = args.frameMax
-            @sendBuffer = new Buffer(@frameMax)
+            @sendBuffer = Buffer.allocUnsafe(@frameMax)
 
           @_sendMethod 0, methods.connectionTuneOk, {
             channelMax: @channelMax

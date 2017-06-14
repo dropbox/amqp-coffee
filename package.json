@@ -1,14 +1,17 @@
 {
-  "name": "amqp-coffee",
+  "name": "@microfleet/amqp-coffee",
   "description": "AMQP driver for node",
   "keywords": [
     "amqp",
     "rabbitmq"
   ],
-  "version": "0.1.30",
+  "version": "1.0.0",
   "author": {
     "name": "David Barshow"
   },
+  "contributors": [
+    "Vitaly Aminev <v@makeomatic.ca>"
+  ],
   "licenses": [
     {
       "type": "MIT",
@@ -22,15 +25,15 @@
   },
   "dependencies": {
     "async": "*",
-    "bson": "~0.4.21",
+    "bson": "^1.0.4",
     "debug": "*",
     "underscore": "*"
   },
   "devDependencies": {
-    "coffee-script": "1.4.0",
+    "coffee-script": "^1.12.6",
     "istanbul": "0.1.43",
-    "jscoverage": "0.3.8",
-    "mocha": "2.5.3",
+    "jscoverage": "^0.6.0",
+    "mocha": "^3.4.2",
     "should": "*",
     "uuid": "^3.0.0"
   },

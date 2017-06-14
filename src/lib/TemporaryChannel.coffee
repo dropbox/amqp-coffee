@@ -11,7 +11,7 @@ class TemporaryChannel extends Channel
     @temporaryChannel()
     return @
 
-  _channelOpen: ()=>
+  _channelOpen: () =>
     if @cb? then @cb(null, @)
     @cb = null
 
