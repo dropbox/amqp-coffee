@@ -435,7 +435,7 @@ class Connection extends EventEmitter
         propertyFlags[Math.floor((i-1)/15)] |= 1 << 0
         propertyFlags.push 0
 
-      if args[field.name]
+      if args[field.name]?
         propertyFlags[Math.floor(i/15)] |= 1 <<(15-i)
 
     for propertyFlag in propertyFlags
