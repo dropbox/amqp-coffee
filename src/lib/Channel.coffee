@@ -3,7 +3,7 @@
 
 debug = require('./config').debug('amqp:Channel')
 async = require('async')
-_     = require('underscore')
+defer = require('lodash/defer')
 
 defaults = require('./defaults')
 { methodTable, classes, methods } = require('./config').protocol
@@ -155,7 +155,7 @@ class Channel extends EventEmitter
       cb(err, res) if cb?
       if OVERFLOW_PROTECTION > 100
         OVERFLOW_PROTECTION = 0
-        _.defer done
+        defer done
       else
         OVERFLOW_PROTECTION++
         done()

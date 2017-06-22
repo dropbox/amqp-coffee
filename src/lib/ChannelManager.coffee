@@ -10,8 +10,8 @@ we track confirm channels and non confirm channels separately.
 
 publisherPoolSize = 1
 
-Publisher         = require('./Publisher')
-Consumer          = require('./Consumer')
+Publisher = require('./Publisher')
+Consumer = require('./Consumer')
 TemporaryChannel  = require('./TemporaryChannel')
 
 class ChannelManager

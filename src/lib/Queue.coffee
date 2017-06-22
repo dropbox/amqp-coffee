@@ -1,11 +1,11 @@
 # Queues
 debug = require('./config').debug('amqp:Queue')
-Channel        = require('./Channel')
-defaults       = require('./defaults')
+Channel = require('./Channel')
+defaults = require('./defaults')
+applyDefaults = require('lodash/defaults')
 
 { methodTable, classes, methods } = require('./config').protocol
 
-_              = require('underscore')
 
 class Queue
   ###
@@ -22,7 +22,7 @@ class Queue
       cb("args.queue is required") if cb?
       return
 
-    @queueOptions = _.defaults args, defaults.queue
+    @queueOptions = applyDefaults args, defaults.queue
 
     @channel  = channel
     @taskPush = channel.taskPush
@@ -37,7 +37,7 @@ class Queue
       args = {}
       declareOptions = @queueOptions
     else
-      declareOptions = _.defaults args, @queueOptions
+      declareOptions = applyDefaults args, @queueOptions
 
     @taskPush methods.queueDeclare, declareOptions, methods.queueDeclareOk, (err, res)=>
       if !queueNameSpecified and !err? and res.queue?
@@ -85,7 +85,7 @@ class Queue
       cb = args
       args = {}
 
-    declareOptions = _.defaults args, @queueOptions
+    declareOptions = applyDefaults args, @queueOptions
 
     @declare declareOptions, (err, res)->
       return cb(err) if err?
@@ -99,7 +99,7 @@ class Queue
       cb = args
       args = {}
 
-    declareOptions = _.defaults args, @queueOptions
+    declareOptions = applyDefaults args, @queueOptions
 
     @declare declareOptions, (err, res)->
       return cb(err) if err?
@@ -113,7 +113,7 @@ class Queue
       cb = args
       args = {}
 
-    queueDeleteArgs = _.defaults args, defaults.queueDelete, {queue: @queueOptions.queue}
+    queueDeleteArgs = applyDefaults args, defaults.queueDelete, {queue: @queueOptions.queue}
     @taskPush methods.queueDelete, queueDeleteArgs, methods.queueDeleteOk, cb
 
     return @

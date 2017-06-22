@@ -1,5 +1,5 @@
 try
-  clientVersion     = JSON.parse(require('fs').readFileSync("#{__dirname}/../../../package.json")).version
+  clientVersion = JSON.parse(require('fs').readFileSync("#{__dirname}/../../../package.json")).version
 catch e
   clientVersion = '0.0.1'
 

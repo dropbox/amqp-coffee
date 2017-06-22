@@ -1,13 +1,9 @@
-# debug             = require('debug')('amqp:AMQPParser')
-{EventEmitter}    = require('events')
-
+{ EventEmitter }  = require('events')
 { Indicators, FrameType } = require('./config').constants
-{ methodTable, classes, methods }         = require('./config').protocol
-debug                                     = require('./config').debug('amqp:AMQPParser')
+{ methodTable, classes, methods } = require('./config').protocol
+{ parseIntFromBuffer, parseFields } = require('./parseHelpers')
 
-
-{parseIntFromBuffer, parseFields} = require('./parseHelpers')
-
+debug = require('./config').debug('amqp:AMQPParser')
 
 class AMQPParser extends EventEmitter
   constructor: (version, type, connection) ->

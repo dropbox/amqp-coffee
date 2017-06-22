@@ -3,7 +3,7 @@ debug          = require('./config').debug('amqp:Exchange')
 { methods }    = require('./config').protocol
 defaults       = require('./defaults')
 
-_              = require('underscore')
+applyDefaults = require('lodash/defaults')
 
 class Exchange
   constructor: (channel, args, cb)->
@@ -15,7 +15,7 @@ class Exchange
       cb("args.exchange is requried") if cb?
       return
 
-    @exchangeOptions = _.defaults args, defaults.exchange
+    @exchangeOptions = applyDefaults args, defaults.exchange
 
     @channel  = channel
     @taskPush = channel.taskPush
@@ -31,7 +31,7 @@ class Exchange
       args = {}
       declareOptions = @exchangeOptions
     else
-      declareOptions = _.defaults args, @exchangeOptions
+      declareOptions = applyDefaults args, @exchangeOptions
 
     @taskPush methods.exchangeDeclare, declareOptions, methods.exchangeDeclareOk, cb
     return @
@@ -41,7 +41,7 @@ class Exchange
       cb = args
       args = {}
 
-    exchangeDeleteOptions = _.defaults args, defaults.exchangeDelete, {exchange: @exchangeOptions.exchange}
+    exchangeDeleteOptions = applyDefaults args, defaults.exchangeDelete, {exchange: @exchangeOptions.exchange}
 
     @taskPush methods.exchangeDelete, exchangeDeleteOptions, methods.exchangeDeleteOk, cb
     return @

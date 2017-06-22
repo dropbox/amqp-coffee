@@ -3,7 +3,10 @@ debug     = require('./config').debug('amqp:Publisher')
 Channel   = require('./Channel')
 defaults  = require('./defaults')
 
-_         = require('underscore')
+clone = require('lodash/clone')
+applyDefaults = require('lodash/defaults')
+defer = require('lodash/defer')
+keys = require('lodash/keys')
 
 { methodTable, classes, methods } = require('./config').protocol
 
@@ -49,7 +52,7 @@ class Publisher extends Channel
 
     # Because we add modify options, we want to make sure we only modify our internal version
     # this is why we clone it.
-    if !options? then options = {} else options = _.clone options
+    if !options? then options = {} else options = clone options
 
     if @state isnt "open" or (@confirm and @confirmState isnt "open")
       if @state is "opening" or @state is "closed" or (@confirm and @confirmState is 'opening')
@@ -89,7 +92,7 @@ class Publisher extends Channel
     thisSequenceNumber = @seq++ if @confirm
 
     # Apply default options after we deal with potentially converting the data
-    options            = _.defaults options, defaults.basicPublish
+    options            = applyDefaults options, defaults.basicPublish
     options.exchange   = exchange
     options.routingKey = routingKey
 
@@ -105,7 +108,7 @@ class Publisher extends Channel
       @_waitForSeq thisSequenceNumber, cb
     else
       debug 4, () -> return JSON.stringify {exchange, routingKey, data, options, noConfirm: true}
-      _.defer(cb) if cb?
+      defer(cb) if cb?
 
 
   _onMethod: (channel, method, args)->
@@ -136,8 +139,7 @@ class Publisher extends Channel
 
   _gotSeq:(seq, multi, err = null)->
     if multi
-      keys = _.keys @seqCallbacks
-      for key in keys
+      for key in keys(@seqCallbacks)
         if key <= seq
           @seqCallbacks[key](err)
           delete @seqCallbacks[key]

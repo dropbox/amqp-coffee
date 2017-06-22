@@ -1,14 +1,16 @@
 # Exchange
-os        = require('os')
+os = require('os')
 
-debug     = require('./config').debug('amqp:Consumer')
-Channel   = require('./Channel')
-_         = require('underscore')
-async     = require('async')
-defaults  = require('./defaults')
+debug = require('./config').debug('amqp:Consumer')
+Channel = require('./Channel')
+async = require('async')
+defaults = require('./defaults')
+applyDefaults = require('lodash/defaults')
+extend = require('lodash/extend')
+clone = require('lodash/clone')
 
-BSON    = require('bson')
-bson    = new BSON()
+BSON = require('bson')
+bson = new BSON()
 
 { methodTable, classes, methods } = require('./config').protocol
 { MaxEmptyFrameSize } = require('./config').constants
@@ -56,14 +58,14 @@ class Consumer extends Channel
       providedOptions = {prefetchCount: options.prefetchCount}
       providedOptions['global'] = options.global if options.global?
 
-      qosOptions    = _.defaults providedOptions, defaults.basicQos
+      qosOptions    = applyDefaults providedOptions, defaults.basicQos
       options.noAck = false
       delete options.prefetchCount
     else
       @qos = false
       options.noAck = true
 
-    consumeOptions             = _.defaults options, defaults.basicConsume
+    consumeOptions             = applyDefaults options, defaults.basicConsume
     consumeOptions.queue       = queueName
     consumeOptions.consumerTag = @consumerTag
 
@@ -122,7 +124,7 @@ class Consumer extends Channel
         global = true
 
 
-      qosOptions = _.defaults({prefetchCount, global}, @qosOptions)
+      qosOptions = applyDefaults({prefetchCount, global}, @qosOptions)
 
     @taskPush methods.basicQos, qosOptions, methods.basicQosOk, cb
 
@@ -218,7 +220,7 @@ class Consumer extends Channel
 
   _onContentHeader: (channel, classInfo, weight, properties, size)->
     debug 3, ()->return "_onContentHeader #{JSON.stringify properties} #{size}"
-    @incomingMessage = _.extend @incomingMessage, {weight, properties, size}
+    @incomingMessage = extend @incomingMessage, {weight, properties, size}
 
     # if we're only expecting one packet lets just copy the buffer when we get it
     # otherwise lets create a new incoming data buffer and pre alloc the space
@@ -240,7 +242,7 @@ class Consumer extends Channel
       @incomingMessage.data.used += data.length
 
     if @incomingMessage.data.used >= @incomingMessage.size || @incomingMessage.size == 0
-      message = _.clone @incomingMessage
+      message = clone @incomingMessage
       message.raw = @incomingMessage.data
 
       # DEFINE GETTERS ON THE DATA FIELD WHICH RETURN A COPY OF THE RAW DATA

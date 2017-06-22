@@ -1,21 +1,26 @@
-debug               = require('./config').debug('amqp:Connection')
+debug = require('./config').debug('amqp:Connection')
 
-{EventEmitter}      = require('events')
-net                 = require('net')
-tls                 = require('tls')
-_                   = require('underscore')
-async               = require('async')
+{ EventEmitter } = require('events')
+net = require('net')
+tls = require('tls')
+async = require('async')
 
-defaults                                                  = require('./defaults')
-{ methodTable, classes, methods }                         = require('./config').protocol
-{ FrameType, HeartbeatFrame, EndFrame }   = require('./config').constants
-{ serializeInt, serializeFields }                         = require('./serializationHelpers')
+once = require('lodash/once')
+applyDefaults = require('lodash/defaults')
+defer = require('lodash/defer')
+flatten = require('lodash/flattenDeep')
+delay = require('lodash/delay')
+keys = require('lodash/keys')
 
-Queue           = require('./Queue')
-Exchange        = require('./Exchange')
-AMQPParser      = require('./AMQPParser')
+defaults = require('./defaults')
+{ methodTable, classes, methods } = require('./config').protocol
+{ FrameType, HeartbeatFrame, EndFrame } = require('./config').constants
+{ serializeInt, serializeFields } = require('./serializationHelpers')
+
+Queue = require('./Queue')
+Exchange = require('./Exchange')
+AMQPParser = require('./AMQPParser')
 ChannelManager  = require('./ChannelManager')
-
 
 if process.env.AMQP_TEST?
   defaults.connection.reconnectDelayTime = 100
@@ -42,12 +47,12 @@ class Connection extends EventEmitter
       args = {}
 
     # this is the main connect event
-    cb = _.once cb if cb?
+    cb = once cb if cb?
     @cb = cb
 
     @state = 'opening'
 
-    @connectionOptions = _.defaults args, defaults.connection
+    @connectionOptions = applyDefaults args, defaults.connection
 
     # setup our defaults
     @channelCount = 0
@@ -68,7 +73,7 @@ class Connection extends EventEmitter
 
       (next)=>
         # determine to host to connect to if we have an array of hosts
-        @connectionOptions.hosts = _.flatten([@connectionOptions.host]).map (uri)=>
+        @connectionOptions.hosts = flatten([@connectionOptions.host]).map (uri)=>
           if uri.port? and uri.host?
             return {host: uri.host.toLowerCase(), port: parseInt(uri.port)}
 
@@ -210,10 +215,10 @@ class Connection extends EventEmitter
     # @connection.removeAllListeners() TODO evaluate this
     @_clearHeartbeatTimer()
 
-    _.defer () =>
+    defer () =>
       @state = 'destroyed'
 
-      if cb? then cb = _.once cb
+      if cb? then cb = once cb
 
       # only atempt to cleanly close the connection if our current connection is writable
       if @connection.writable
@@ -276,7 +281,7 @@ class Connection extends EventEmitter
       @state = 'reconnecting'
       debug 1, ()-> return "Connection closed reconnecting..."
 
-      _.delay () =>
+      delay () =>
         # rotate hosts if we have multiple hosts
         if @connectionOptions.hosts.length > 1
           @connectionOptions.hosti = (@connectionOptions.hosti + 1) % @connectionOptions.hosts.length
@@ -287,7 +292,7 @@ class Connection extends EventEmitter
 
 
   _reestablishChannels: () =>
-    async.forEachSeries _.keys(@channels), (channel, done)=>
+    async.forEachSeries keys(@channels), (channel, done)=>
       if channel is "0" then done() else
         # check to make sure the channel is still around before attempting to reset it
         # the channel could have been temporary
