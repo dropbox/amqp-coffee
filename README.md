@@ -101,14 +101,14 @@ After the `reconnectDelayTime` the hosts are rotated if more than one `host` is 
 A new connection is atempted, if the connection is not sucessful this process repeats.
 After a connection is re-establed, all of the channels are reset, this atempts to reopen that channel.  Different channel types re-establish there channels differently.
 * Publisher channels, will only reconnect when a publish is atempted.
-* Consumer channels will reconnect and resume consuming.  If it was a autoDelete queue, this could fail.  Make sure you listen to the ready even on the connection to re-set up and consume any autoDelete queues.
+* Consumer channels will reconnect and resume consuming.  If it was a autoDelete queue, this could fail.  Make sure you listen to the ready event on the connection to re-set up and consume any autoDelete queues.
 * Queue / Exchange channels are recreated on demand.
 
 ### Event: 'ready'
 Emitted when the connection is open successfully.  This will be called after each successful reconnect.
 
 ### Event: 'close'
-Emitted when a open connection leaves the ready state and is closed.
+Emitted when an open connection leaves the ready state and is closed.
 
 ### Event: 'error'
 Very rare, only emitted when there's a server version mismatch
@@ -116,7 +116,7 @@ Very rare, only emitted when there's a server version mismatch
 
 ### connection.queue([queueOptions],[callback])
 
-This returns a channel that can be used to declare, bind, unbind, or delete queus.  This on its own does NOT declare a queue.
+This returns a channel that can be used to declare, bind, unbind, or delete queues.  This on its own does NOT declare a queue.
 When creating a queue class using connection.queue, you can specify options that will be used in all the child methods.
 
 The `queueOptions` argument should be an object which specifies:
@@ -258,7 +258,7 @@ amqp = new AMQP ()->
         console.log "Consumer Ready"
 ```
 #### consumer Event: error
-Errors will be emitted from the consumer if we can not consumer from that queue anymore.  For example if you're consuming a autoDelete queue and you reconnect that queue will be gone.  It will return the raw error message with code as the message.
+Errors will be emitted from the consumer if we can not consume from that queue anymore.  For example if you're consuming a autoDelete queue and you reconnect that queue will be gone.  It will return the raw error message with code as the message.
 
 #### consumer Event: cancel
 The cancel event will be emitted from the consumer if we receive a server initiated "basic.cancel".  For this to happen you must
@@ -281,7 +281,7 @@ Calls consumer.cancel, if we're currently consuming.  Then calls channel.close a
 consumer.consume, sets up the consumer with a new consumer tag
 
 #### consumer.flow(active, [callback])
-An alias for consumer.pause (active == false) and consome.resume (active == true)
+An alias for consumer.pause (active == false) and consumer.resume (active == true)
 
 ### connection.close()
 
