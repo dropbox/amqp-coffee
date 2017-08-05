@@ -46,19 +46,30 @@ class Queue
 
     return @
 
-  bind: (exchange, routingKey, queueName, cb)=>
-    if typeof queueName is 'string'
-      queueName =  queueName
+  bind: (exchange, routingKey, opts, cb)=>
+    if typeof opts is 'function'
+      cb = opts
+      queueName = @queueOptions.queue
+      args = {}
+    else if typeof opts is 'string'
+      queueName = opts
+      args = {}
+      # cb is either undefined or present, both are good opts
+    else if opts isnt null and typeof opts is 'object'
+      # neither string or function means its either
+      args = opts.arguments or {}
+      queueName = opts.queue or @queueOptions.queue
     else
-      cb = queueName
+      args = {}
       queueName = @queueOptions.queue
 
     queueBindOptions = {
       queue:      queueName
       exchange:   exchange
       routingKey: routingKey
-      arguments: {}
+      arguments:  args
     }
+
     @taskPush methods.queueBind, queueBindOptions, methods.queueBindOk, cb
 
     return @

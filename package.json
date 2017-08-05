@@ -5,7 +5,10 @@
     "amqp",
     "rabbitmq"
   ],
-  "version": "1.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "1.1.0",
   "author": {
     "name": "David Barshow"
   },
@@ -24,16 +27,16 @@
     "prepublish": "./scripts/compile.sh"
   },
   "dependencies": {
-    "async": "^2.4.1",
+    "async": "^2.5.0",
     "bson": "^1.0.4",
     "debug": "^2.6.8",
     "lodash": "^4.17.4"
   },
   "devDependencies": {
-    "coffee-script": "^1.12.6",
+    "coffee-script": "^1.12.7",
     "istanbul": "0.1.43",
     "jscoverage": "^0.6.0",
-    "mocha": "^3.4.2",
+    "mocha": "^3.5.0",
     "should": "*",
     "underscore": "^1.8.3",
     "uuid": "^3.1.0"

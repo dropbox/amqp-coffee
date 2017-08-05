@@ -405,6 +405,39 @@ describe 'Queue', () ->
 
     ], done
 
+  it 'test we can bind queue to headers with custom arguments', (done)->
+    amqp = null
+    queue = null
+    queueName = uuid()
+    async.series [
+      (next)->
+        amqp = new AMQP {host:'localhost'}, (e, r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        amqp.queue {queue:queueName}, (e, q)->
+          should.not.exist e
+          should.exist q
+          queue = q
+          next()
+
+      (next)->
+        queue.declare {passive:false}, (e,r)->
+          should.not.exist e
+          next()
+
+      (next)->
+        opts =
+          arguments:
+            'x-routing-key': queueName
+
+        queue.bind "amq.match", "", opts, (e,r)->
+          should.not.exist e
+          next()
+
+    ], done
+
   it 'test we do not error on a double bind', (done)->
     amqp = null
     queue = null
