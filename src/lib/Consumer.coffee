@@ -8,6 +8,7 @@ defaults = require('./defaults')
 applyDefaults = require('lodash/defaults')
 extend = require('lodash/extend')
 clone = require('lodash/clone')
+pickBy = require('lodash/pickBy')
 
 BSON = require('bson')
 bson = new BSON()
@@ -169,6 +170,13 @@ class Consumer extends Channel
     else
       @consumerState = CONSUMER_STATE_CONNECTION_CLOSED
 
+  multiAck: (deliveryTag)->
+    if @qos
+      @outstandingDeliveryTags = pickBy @outstandingDeliveryTags, (value, key) -> key > deliveryTag
+
+      if @state is 'open'
+        basicAckOptions = { deliveryTag, multiple: true }
+        @connection._sendMethod @channel, methods.basicAck, basicAckOptions
 
   # QOS RELATED Callbacks
   ack: ()->

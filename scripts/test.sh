@@ -109,5 +109,3 @@ else
   AMQP_TEST=1 NODE_PATH=$ROOT/bin $MOCHA --require 'coffee-script/register' --compilers coffee:coffee-script --reporter spec --ui bdd --timeout 10000 --grep "$GREP" $TESTS
 
 fi
-
-
