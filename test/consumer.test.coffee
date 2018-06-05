@@ -235,7 +235,7 @@ describe 'Consumer', () ->
 
   it 'test we can consume a queue and get a big message 588', (done)->
 
-    testData = new Buffer(MaxFrameSize*3.5)
+    testData = Buffer.alloc(MaxFrameSize*3.5)
     amqp = null
     queue = uuid()
 
@@ -276,7 +276,7 @@ describe 'Consumer', () ->
   it 'test we can consume a queue several really big messages 173', (done)->
     this.timeout(120000)
 
-    testData = new Buffer(10*1024*1024) # 10 mb ish
+    testData = Buffer.alloc(10*1024*1024) # 10 mb ish
 
     amqp = null
     queue = uuid()
@@ -319,7 +319,7 @@ describe 'Consumer', () ->
       should.not.exist e
 
   it 'test we can consume a queue and get a JSON big message', (done)->
-    t = new Buffer(MaxFrameSize*3.5)
+    t = Buffer.alloc(MaxFrameSize*3.5)
     testData = {t: t.toString()}
     amqp = null
     queue = uuid()
@@ -351,7 +351,7 @@ describe 'Consumer', () ->
 
 
   it 'test we can consume a queue and get a BSON big message 142', (done)->
-    t = new Buffer(MaxFrameSize*3.5)
+    t = Buffer.alloc(MaxFrameSize*3.5)
     testData = {t: t.toString()}
     amqp = null
     queue = uuid()
@@ -1244,7 +1244,7 @@ describe 'Consumer', () ->
     consumer = null
 
     messageProcessor = (m)->
-      zeroLengthBuffer = new Buffer(0)
+      zeroLengthBuffer = Buffer.alloc(0)
       (m.data.toString() == zeroLengthBuffer.toString()).should.eql true
       consumer.close()
 
@@ -1262,7 +1262,7 @@ describe 'Consumer', () ->
             q.bind "amq.direct", queue, next
 
       (next)->
-        amqp.publish "amq.direct", queue, new Buffer(0), {confirm: true}, next
+        amqp.publish "amq.direct", queue, Buffer.alloc(0), {confirm: true}, next
 
       (next)->
         consumer = amqp.consume queue, {}, messageProcessor, (e,r)->

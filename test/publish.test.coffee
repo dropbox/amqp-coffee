@@ -61,7 +61,7 @@ describe 'Publisher', () ->
             i = 0
             j = 0
             while i <= 100
-              amqp.publish "amq.direct", queue, {b:new Buffer(500)}, {deliveryMode:2, confirm:true}, (e,r)->
+              amqp.publish "amq.direct", queue, {b:Buffer.alloc(500)}, {deliveryMode:2, confirm:true}, (e,r)->
                 should.not.exist e
                 j++
                 if j >=100
@@ -109,7 +109,7 @@ describe 'Publisher', () ->
   #         next()
 
   #     (next)->
-  #       amqp.publish "amq.direct", queue, "test message #{new Buffer(10240000).toString()}", {confirm: true}, (e,r)->
+  #       amqp.publish "amq.direct", queue, "test message #{Buffer.alloc(10240000).toString()}", {confirm: true}, (e,r)->
   #         should.not.exist e
   #         next()
 
@@ -174,7 +174,7 @@ describe 'Publisher', () ->
           next()
 
       (next)->
-        amqp.publish "amq.direct", queue, new Buffer(15), {}, (e,r)->
+        amqp.publish "amq.direct", queue, Buffer.alloc(15), {}, (e,r)->
           should.not.exist e
           next()
 
@@ -192,7 +192,7 @@ describe 'Publisher', () ->
           next()
 
       (next)->
-        amqp.publish "amq.direct", uuid(), new Buffer(packetSize), {}, (e,r)->
+        amqp.publish "amq.direct", uuid(), Buffer.alloc(packetSize), {}, (e,r)->
           should.not.exist e
           next()
 
@@ -210,7 +210,7 @@ describe 'Publisher', () ->
           next()
 
       (next)->
-        amqp.publish "amq.direct", uuid(), new Buffer(packetSize), {confirm: true}, (e,r)->
+        amqp.publish "amq.direct", uuid(), Buffer.alloc(packetSize), {confirm: true}, (e,r)->
           should.not.exist e
           next()
 
@@ -230,7 +230,7 @@ describe 'Publisher', () ->
 
       (next)->
         async.forEach [0...1000], (i, next)->
-          amqp.publish "amq.direct", "queue-#{i}", new Buffer(packetSize), {confirm: true}, (e,r)->
+          amqp.publish "amq.direct", "queue-#{i}", Buffer.alloc(packetSize), {confirm: true}, (e,r)->
             should.not.exist e
             next()
         , next
@@ -248,7 +248,7 @@ describe 'Publisher', () ->
       should.not.exist e
 
       async.forEach [0...10], (i, next)->
-        amqp.publish "amq.direct", "queue-#{i}", new Buffer(packetSize), {confirm: true}, (e,r)->
+        amqp.publish "amq.direct", "queue-#{i}", Buffer.alloc(packetSize), {confirm: true}, (e,r)->
           should.not.exist e
           next()
       , done
@@ -265,7 +265,7 @@ describe 'Publisher', () ->
           next()
 
       (next)->
-        amqp.publish "amq.direct", "idontExist", new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
+        amqp.publish "amq.direct", "idontExist", Buffer.alloc(50), {confirm:true, mandatory: true}, (e,r)->
           should.exist e
           e.replyCode.should.eql 312
           next()
@@ -294,7 +294,7 @@ describe 'Publisher', () ->
 
           (next)->
             async.forEachSeries [0...100], (i, next)->
-              amqp.publish "amq.direct", "idontExist", new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
+              amqp.publish "amq.direct", "idontExist", Buffer.alloc(50), {confirm:true, mandatory: true}, (e,r)->
                 should.exist e
                 e.replyCode.should.eql 312
                 next()
@@ -302,7 +302,7 @@ describe 'Publisher', () ->
 
           (next)->
             async.forEachSeries [0...100], (i, next)->
-              amqp.publish "amq.direct", queueName, new Buffer(50), {confirm:true, mandatory: true}, (e,r)->
+              amqp.publish "amq.direct", queueName, Buffer.alloc(50), {confirm:true, mandatory: true}, (e,r)->
                 should.not.exist e
                 next()
             ,next
@@ -338,7 +338,7 @@ describe 'Publisher', () ->
       (next)->
         options = {confirm:true, mandatory: false}
         async.forEach [0...10], (i, next)->
-          amqp.publish "amq.direct", ["testpublish",((i%2)+1)].join(''), new Buffer(50), options, (e,r)->
+          amqp.publish "amq.direct", ["testpublish",((i%2)+1)].join(''), Buffer.alloc(50), options, (e,r)->
             should.not.exist e
             next()
         ,next
@@ -436,7 +436,7 @@ describe 'Publisher', () ->
     this.timeout(10000)
     amqp = null
 
-    testData = {test:"message", size: new Buffer(1000)}
+    testData = {test:"message", size: Buffer.alloc(1000)}
     amqp = null
     queue = uuid()
     messagesRecieved = 0

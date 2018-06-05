@@ -237,7 +237,7 @@ class Consumer extends Channel
       @incomingMessage.data.used = 0
 
     if size == 0
-      @_onContent(channel, new Buffer(0))
+      @_onContent(channel, Buffer.allocUnsafe(0))
 
   _onContent: (channel, data)=>
     if !@incomingMessage.data? and @incomingMessage.size is data.length

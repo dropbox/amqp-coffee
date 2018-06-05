@@ -22,5 +22,5 @@ amqpClient = new AMQP {host: 'localhost'}, (error)->
 
     amqpClient.publish 'amq.direct', 'testRoutingKey', 'testMessage'
     amqpClient.publish 'amq.direct', 'testRoutingKey', {json: 'this is a json object'}
-    amqpClient.publish 'amq.direct', 'testRoutingKey', new Buffer(3)
+    amqpClient.publish 'amq.direct', 'testRoutingKey', Buffer.alloc(3)
 

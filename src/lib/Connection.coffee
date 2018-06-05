@@ -243,7 +243,7 @@ class Connection extends EventEmitter
     if !process.env.AMQP_TEST? then return true
     # this will crash a channel forcing an out of order operation
     debug "Trying to crash connection by an oow op"
-    @_sendBody @channel, new Buffer(100), {}
+    @_sendBody @channel, Buffer.alloc(100), {}
 
   # Service Called Functions
   _connectedFirst: () =>

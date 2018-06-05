@@ -38,7 +38,7 @@ module.exports = {
     HEARTBEAT: 8
   })
 
-  HeartbeatFrame : new Buffer([8,0,0,0,0,0,0,206])
-  EndFrame       : new Buffer([206])
+  HeartbeatFrame : Buffer.from([8,0,0,0,0,0,0,206])
+  EndFrame       : Buffer.from([206])
 }
 

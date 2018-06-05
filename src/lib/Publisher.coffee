@@ -84,7 +84,7 @@ class Publisher extends Channel
       # options.contentType = 'application/bson'
 
     else if data is undefined
-      data = new Buffer(0)
+      data = Buffer.allocUnsafe(0)
       options.contentType = 'application/undefined'
 
 
