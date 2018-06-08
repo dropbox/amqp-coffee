@@ -61,7 +61,7 @@ describe 'Publisher', () ->
             i = 0
             j = 0
             while i <= 100
-              amqp.publish "amq.direct", queue, {b:Buffer.alloc(500)}, {deliveryMode:2, confirm:true}, (e,r)->
+              amqp.publish "amq.direct", queue, {b:Buffer.allocUnsafe(500)}, {deliveryMode:2, confirm:true}, (e,r)->
                 should.not.exist e
                 j++
                 if j >=100

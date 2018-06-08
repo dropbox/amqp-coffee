@@ -7,6 +7,7 @@ debug = require('./config').debug('amqp:AMQPParser')
 
 class AMQPParser extends EventEmitter
   constructor: (version, type, connection) ->
+    super()
     @connection = connection
 
     # send the start of the handshake....
@@ -15,7 +16,6 @@ class AMQPParser extends EventEmitter
     # set up some defaults, for reuse
     @frameHeader = Buffer.allocUnsafe(7)
     @frameHeader.used = 0
-    @frameHeader.length = @frameHeader.length
 
     # set the first step in out parser
     @parser = @header

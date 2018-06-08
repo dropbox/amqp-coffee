@@ -9,6 +9,6 @@ mkdir $SCRIPT_PATH/../bin
 cp -r $SCRIPT_PATH/../src $SCRIPT_PATH/../bin/
 
 # compile all coffeescript files
-find $SCRIPT_PATH/../bin -name "*.coffee" | xargs $SCRIPT_PATH/../node_modules/coffee-script/bin/coffee --compile
+find $SCRIPT_PATH/../bin -name "*.coffee" | xargs $SCRIPT_PATH/../node_modules/coffeescript/bin/coffee --compile
 # remove all coffeescript files
 find $SCRIPT_PATH/../bin -name "*.coffee" | xargs rm

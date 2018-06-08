@@ -5,9 +5,8 @@ defaults  = require('./defaults')
 
 clone = require('lodash/clone')
 applyDefaults = require('lodash/defaults')
-defer = require('lodash/defer')
-keys = require('lodash/keys')
 
+{ BasicReturnError } = require('./Errors')
 { methodTable, classes, methods } = require('./config').protocol
 
 class Publisher extends Channel
@@ -15,7 +14,7 @@ class Publisher extends Channel
   constructor: (connection, channel, confirm)->
     super(connection, channel)
 
-    @seqCallbacks     = {} # publisher confirms
+    @seqCallbacks     = new Map() # publisher confirms
     @confirm          = confirm ? false
 
     @currentMethod = null
@@ -37,11 +36,11 @@ class Publisher extends Channel
     @confirmState = 'closed'
     if !message? then message = "Channel closed, try again"
 
-    for key, cb of @seqCallbacks
+    for cb from @seqCallbacks.values()
       if typeof cb is 'function'
         cb(message)
 
-    @seqCallbacks = {}
+    @seqCallbacks = new Map()
 
     if @confirm then @confirmMode()
 
@@ -62,7 +61,7 @@ class Publisher extends Channel
           @publish(exchange, routingKey, data, options, cb)
 
       else
-        return cb("Channel is closed and will not re-open? #{@state} #{@confirm} #{@confirmState}") if cb
+        return cb(new Error("Channel is closed and will not re-open? #{@state} #{@confirm} #{@confirmState}")) if cb
 
     # data must be a buffer
     if typeof data is 'string'
@@ -97,7 +96,7 @@ class Publisher extends Channel
     options.routingKey = routingKey
 
     # This is to tie back this message as failed if it failed in confirm mode with a mandatory or immediate publish
-    if @confirm and cb? and (options.mandatory || options.immediate )
+    if @confirm and cb? and (options.mandatory || options.immediate)
       options.headers ?= {}
       options.headers['x-seq'] = thisSequenceNumber
 
@@ -108,7 +107,7 @@ class Publisher extends Channel
       @_waitForSeq thisSequenceNumber, cb
     else
       debug 4, () -> return JSON.stringify {exchange, routingKey, data, options, noConfirm: true}
-      defer(cb) if cb?
+      setImmediate(cb) if cb?
 
 
   _onMethod: (channel, method, args)->
@@ -125,30 +124,30 @@ class Publisher extends Channel
     switch @currentMethod
       when methods.basicReturn
         if properties.headers?['x-seq']?
-          @_gotSeq properties.headers['x-seq'], false, @currentArgs
+          @_gotSeq properties.headers['x-seq'], false, new BasicReturnError(@currentArgs)
 
   _onContent: (channel, data)->
     # Content is not needed on a basicReturn
 
   _waitForSeq: (seq, cb)->
     if typeof cb is 'function'
-      @seqCallbacks[seq] = cb
+      @seqCallbacks.set seq, cb
     else
       debug "callback requested for publish that isn't a function"
       console.error cb
 
   _gotSeq:(seq, multi, err = null)->
     if multi
-      for key in keys(@seqCallbacks)
+      for key from @seqCallbacks.keys()
         if key <= seq
-          @seqCallbacks[key](err)
-          delete @seqCallbacks[key]
+          @seqCallbacks.get(key)(err)
+          @seqCallbacks.delete key
     else
-      if @seqCallbacks[seq]?
-        @seqCallbacks[seq](err)
+      if @seqCallbacks.has(seq)
+        @seqCallbacks.get(seq)(err)
       else
         debug 3, ()-> return "got a seq for #{seq} but that callback either doesn't exist or was already called or was returned"
 
-      delete @seqCallbacks[seq]
+      @seqCallbacks.delete seq
 
 module.exports = Publisher

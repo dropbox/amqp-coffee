@@ -14,6 +14,7 @@ OVERFLOW_PROTECTION = 0
 
 class Channel extends EventEmitter
   constructor: (connection, channel)->
+    super()
 
     @channel    = channel
     @connection = connection
@@ -162,7 +163,7 @@ class Channel extends EventEmitter
 
     # if preflight is false do not proceed
     if preflight? and !preflight()
-      return doneFn('preflight check failed')
+      return doneFn(new Error('preflight check failed'))
 
     if @state is 'closed' and @connection.state is 'open'
       debug 1, ()->return "Channel reassign"
@@ -173,7 +174,7 @@ class Channel extends EventEmitter
     else if @state isnt 'open'
       # if our connection is closed that ok, but if its destroyed it will not reopen
       if @connection.state is 'destroyed'
-        doneFn("Connection is destroyed")
+        doneFn(new Error("Connection is destroyed"))
 
       else
         if @connection.channelManager.isChannelClosed(@channel)
@@ -208,7 +209,7 @@ class Channel extends EventEmitter
 
 
   # incomming channel messages for us
-  _onChannelMethod: (channel, method, args )->
+  _onChannelMethod: (channel, method, args)->
     if @transactional then @lastChannelAccess = Date.now()
 
     if channel isnt @channel
@@ -222,7 +223,7 @@ class Channel extends EventEmitter
 
         @state = 'closed'
 
-        @_channelClosed("Channel closed")
+        @_channelClosed(new Error("Channel closed"))
         @_callOutstandingCallbacks({msg: "Channel closed"})
 
       when methods.channelClose

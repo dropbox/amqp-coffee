@@ -40,6 +40,7 @@ class Connection extends EventEmitter
 
   ###
   constructor: (args, cb)->
+    super()
     @id = Math.round(Math.random() * 1000)
 
     if typeof args is 'function'
@@ -161,7 +162,6 @@ class Connection extends EventEmitter
     if cb? then @once 'ready', cb
     @on 'close', @_closed
 
-    super()
     return @
 
   updateConnectionOptionsHostInformation: () =>
