@@ -1,0 +1,27 @@
+{
+  "branch": "master",
+  "verifyConditions": [
+    "@semantic-release/npm",
+    "@semantic-release/git",
+    "@semantic-release/github"
+  ],
+  "prepare": [
+    "@semantic-release/changelog",
+    "@semantic-release/npm",
+    "@semantic-release/git"
+  ],
+  "monorepo": {
+    "analyzeCommits": {
+      "preset": "angular",
+      "releaseRules": [
+        { "type": "docs", "release": "patch" },
+        { "type": "refactor", "release": "patch" },
+        { "type": "style", "release": "patch" },
+        { "type": "minor", "release": "minor" },
+        { "type": "patch", "release": "patch" },
+        { "type": "major", "release": "major" },
+        { "type": "breaking", "release": "major" }
+      ]
+    }
+  }
+}

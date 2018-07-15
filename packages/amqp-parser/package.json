@@ -1,0 +1,47 @@
+{
+  "name": "@microfleet/amqp-parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/parser.js",
+  "scripts": {
+    "test": "jest",
+    "prepare": "tsc -p tsconfig.build.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^23.1.4",
+    "@types/joi": "^13.3.0",
+    "@types/node": "^10.5.2",
+    "jest": "^23.3.0",
+    "ts-jest": "^23.0.0",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsConfigFile": "tsconfig.json",
+        "skipBabel": true
+      }
+    },
+    "testMatch": [
+      "**/__tests__/*.+(ts|tsx|js)"
+    ],
+    "testEnvironment": "node",
+    "reporters": [
+      "default"
+    ]
+  },
+  "dependencies": {
+    "string_decoder": "^1.1.1"
+  }
+}

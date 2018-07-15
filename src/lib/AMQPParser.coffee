@@ -82,7 +82,7 @@ class AMQPParser extends EventEmitter
       return @frame
 
   frameEnd: (data)->
-    if !(data.length > 0) then return @frameEnd
+    if (data.length > 0 is false) then return @frameEnd
     if data[0] != Indicators.FRAME_END
       return @error "Missing frame end marker"
 
