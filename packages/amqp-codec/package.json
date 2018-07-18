@@ -1,11 +1,12 @@
 {
-  "name": "@microfleet/amqp-parser",
+  "name": "@microfleet/amqp-codec",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/parser.js",
+  "main": "dist/index.js",
+  "typings": "./dist/index.d.ts",
   "scripts": {
     "test": "jest",
-    "prepare": "tsc -p tsconfig.build.json"
+    "prepare": "rimraf ./dist; tsc -p tsconfig.build.json"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
     "@types/joi": "^13.3.0",
     "@types/node": "^10.5.2",
     "jest": "^23.3.0",
+    "rimraf": "^2.6.2",
     "ts-jest": "^23.0.0",
     "tslint": "^5.10.0",
     "typescript": "^2.9.2"

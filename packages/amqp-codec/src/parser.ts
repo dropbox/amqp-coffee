@@ -1,90 +1,25 @@
 // tslint:disable:object-literal-sort-keys
 import assert = require('assert');
 import { Buffer } from 'buffer';
-import { classes, InterfaceClass, InterfaceField, InterfaceMethodsTableMethod, methodTable } from './protocol';
+import {
+  AMQPTypes,
+  FrameType,
+  INDICATOR_FRAME_END,
+  InterfaceProtocol,
+  kMissingFrame,
+  kUnknownFrameType,
+} from './constants';
+import { classes, InterfaceField, InterfaceMethodsTableMethod, methodTable } from './protocol';
 
-interface InterfaceConfiguration {
-  returnBuffers: any;
-  stringNumbers: any;
+export interface InterfaceConfiguration {
   handleResponse: InterfaceHandleResponse;
 }
 
-type InterfaceParsedResponse = InterfaceParsedMethodFrame
-  | InterfaceParsedContentHeader
-  | InterfaceParsedContent
-  | InterfaceHeartbeat
-  | Error;
+type InterfaceHandleResponse = (channel: number, datum: InterfaceProtocol | Error) => void;
 
-interface InterfaceParsedMethodFrame {
-  type: symbol;
-  method: InterfaceMethodsTableMethod;
-  args: any;
-}
-
-interface InterfaceParsedContentHeader {
-  type: symbol;
-  classInfo: InterfaceClass;
-  weight: number;
-  properties: any;
-  size: number;
-}
-
-interface InterfaceParsedContent {
-  type: symbol;
-  data: Buffer;
-}
-
-interface InterfaceHeartbeat {
-  type: symbol;
-}
-
-type InterfaceHandleResponse = (channel: number, datum: InterfaceParsedResponse) => void;
-
-export const kMissingFrame = 'missing end frame';
-export const kUnknownFrameType = 'unknown frametype';
-export const MaxFrameSize = 131072;
-export const MaxEmptyFrameSize = 8;
-export const kMethod = Symbol('method');
-export const kContentHeader = Symbol('contentHeader');
-export const kContent = Symbol('body');
-export const kHeartbeat = Symbol('heartbeat');
-
-export const AMQPTypes = Object.freeze(Object.setPrototypeOf({
-  ARRAY: 'A'.charCodeAt(0),
-  BOOLEAN: 't'.charCodeAt(0),
-  BOOLEAN_FALSE: '\x00',
-  BOOLEAN_TRUE: '\x01',
-  BYTE_ARRAY: 'x'.charCodeAt(0),
-  DECIMAL: 'D'.charCodeAt(0),
-  HASH: 'F'.charCodeAt(0),
-  INTEGER: 'I'.charCodeAt(0),
-  SIGNED_16BIT: 's'.charCodeAt(0),
-  SIGNED_64BIT: 'l'.charCodeAt(0),
-  SIGNED_8BIT: 'b'.charCodeAt(0),
-  STRING: 'S'.charCodeAt(0),
-  TEN: '10'.charCodeAt(0),
-  TIME: 'T'.charCodeAt(0),
-  VOID: 'v'.charCodeAt(0),
-  _32BIT_FLOAT: 'f'.charCodeAt(0),
-  _64BIT_FLOAT: 'd'.charCodeAt(0),
-}, null));
-
-const INDICATOR_FRAME_END = 206;
 const HEADER_SIZE = 7;
-
-export const FrameType = Object.freeze({
-  METHOD: 1,
-  HEADER: 2,
-  BODY: 3,
-  HEARTBEAT: 8,
-});
-
-export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1));
-export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END]);
-export const EndFrame = Buffer.from([INDICATOR_FRAME_END]);
-
 const FIELD_TYPE_SELECTOR = Object.setPrototypeOf({
-  bit(parser: JavascriptAMQPParser, nextField?: InterfaceField): boolean {
+  bit(parser: Parser, nextField?: InterfaceField): boolean {
     const value = ((parser.buffer as Buffer)[parser.offset] & (1 << parser.bitIndex))
       ? true
       : false;
@@ -111,33 +46,33 @@ const FIELD_TYPE_SELECTOR = Object.setPrototypeOf({
 const TYPE_SELECTOR = Object.setPrototypeOf({
   [AMQPTypes.STRING]: parseLongString,
   [AMQPTypes.INTEGER]: parseInt4,
-  [AMQPTypes.TIME]: (parser: JavascriptAMQPParser) => new Date(parseInt8(parser) * 1000),
+  [AMQPTypes.TIME]: (parser: Parser) => new Date(parseInt8(parser) * 1000),
   [AMQPTypes.HASH]: parseTable,
   [AMQPTypes.SIGNED_64BIT]: parseInt8,
-  [AMQPTypes.BOOLEAN]: (parser: JavascriptAMQPParser) => parseInt1(parser) > 0,
-  [AMQPTypes.DECIMAL](parser: JavascriptAMQPParser) {
+  [AMQPTypes.BOOLEAN]: (parser: Parser) => parseInt1(parser) > 0,
+  [AMQPTypes.DECIMAL](parser: Parser) {
     const dec = parseInt1(parser) * 10;
     const num = parseInt4(parser);
     return num / dec;
   },
-  [AMQPTypes._64BIT_FLOAT](parser: JavascriptAMQPParser) {
+  [AMQPTypes._64BIT_FLOAT](parser: Parser) {
     const value = (parser.buffer as Buffer).readDoubleBE(parser.offset);
     parser.offset += 8;
     return value;
   },
-  [AMQPTypes._32BIT_FLOAT](parser: JavascriptAMQPParser) {
+  [AMQPTypes._32BIT_FLOAT](parser: Parser) {
     const value = (parser.buffer as Buffer).readFloatBE(parser.offset);
     parser.offset += 4;
     return value;
   },
-  [AMQPTypes.BYTE_ARRAY](parser: JavascriptAMQPParser) {
+  [AMQPTypes.BYTE_ARRAY](parser: Parser) {
     const len = parseInt4(parser);
     const buf = Buffer.allocUnsafe(len);
     (parser.buffer as Buffer).copy(buf, 0, parser.offset, parser.offset + len);
     parser.offset += len;
     return buf;
   },
-  [AMQPTypes.ARRAY](parser: JavascriptAMQPParser) {
+  [AMQPTypes.ARRAY](parser: Parser) {
     const len = parseInt4(parser);
     const end = parser.offset + len;
     const arr = new Array();
@@ -150,18 +85,18 @@ const TYPE_SELECTOR = Object.setPrototypeOf({
   },
 }, null);
 
-function parseInt1(parser: JavascriptAMQPParser): number {
+function parseInt1(parser: Parser): number {
   return (parser.buffer as Buffer)[parser.offset++];
 }
 
-function parseInt2(parser: JavascriptAMQPParser): number {
+function parseInt2(parser: Parser): number {
   const offset = parser.offset;
   const buffer = parser.buffer as Buffer;
   parser.offset = offset + 2;
   return (buffer[offset] << 8) + buffer[offset + 1];
 }
 
-function parseInt4(parser: JavascriptAMQPParser): number {
+function parseInt4(parser: Parser): number {
   const offset = parser.offset;
   const buffer = parser.buffer as Buffer;
   parser.offset = offset + 4;
@@ -169,7 +104,7 @@ function parseInt4(parser: JavascriptAMQPParser): number {
          (buffer[offset + 2] << 8) + buffer[offset + 3];
 }
 
-function parseInt8(parser: JavascriptAMQPParser): number {
+function parseInt8(parser: Parser): number {
   const offset = parser.offset;
   const buffer = parser.buffer as Buffer;
   parser.offset = offset + 8;
@@ -179,7 +114,7 @@ function parseInt8(parser: JavascriptAMQPParser): number {
          (buffer[offset + 7] << 8)  + buffer[offset + 8];
 }
 
-function parseShortString(parser: JavascriptAMQPParser): string {
+function parseShortString(parser: Parser): string {
   const buffer = parser.buffer as Buffer;
   const length = buffer[parser.offset++];
   const offset = parser.offset;
@@ -189,7 +124,7 @@ function parseShortString(parser: JavascriptAMQPParser): string {
   return s;
 }
 
-function parseLongString(parser: JavascriptAMQPParser): string {
+function parseLongString(parser: Parser): string {
   const length = parseInt4(parser);
   const offset = parser.offset;
   const nextOffset = offset + length;
@@ -198,11 +133,11 @@ function parseLongString(parser: JavascriptAMQPParser): string {
   return s;
 }
 
-function parseValue(parser: JavascriptAMQPParser) {
+function parseValue(parser: Parser) {
   return TYPE_SELECTOR[(parser.buffer as Buffer)[parser.offset++]](parser);
 }
 
-function parseTable(parser: JavascriptAMQPParser) {
+function parseTable(parser: Parser) {
   const length = parseInt4(parser);
   const endOfTable = parser.offset + length - 4;
   const table = Object.create(null);
@@ -214,7 +149,7 @@ function parseTable(parser: JavascriptAMQPParser) {
   return table;
 }
 
-function parseFields(parser: JavascriptAMQPParser, fields: InterfaceMethodsTableMethod['fields']) {
+function parseFields(parser: Parser, fields: InterfaceMethodsTableMethod['fields']) {
   const args = Object.create(null);
 
   // reset bit index
@@ -227,7 +162,7 @@ function parseFields(parser: JavascriptAMQPParser, fields: InterfaceMethodsTable
   return args;
 }
 
-function parseMethodFrame(parser: JavascriptAMQPParser) {
+function parseMethodFrame(parser: Parser) {
   const classId = parseInt2(parser);
   const methodId = parseInt2(parser);
 
@@ -237,10 +172,10 @@ function parseMethodFrame(parser: JavascriptAMQPParser) {
 
   const method = methodTable[classId][methodId];
   const args = parseFields(parser, method.fields);
-  return { type: kMethod, method, args };
+  return { type: FrameType.METHOD, method, args };
 }
 
-function parseHeaderFrame(parser: JavascriptAMQPParser) {
+function parseHeaderFrame(parser: Parser) {
   const classIndex = parseInt2(parser);
   const weight = parseInt2(parser);
   const size = parseInt8(parser);
@@ -258,17 +193,17 @@ function parseHeaderFrame(parser: JavascriptAMQPParser) {
   }
 
   const properties = parseFields(parser, fields);
-  return { type: kContentHeader, classInfo, weight, properties, size };
+  return { type: FrameType.HEADER, classInfo, weight, properties, size };
 }
 
-function parseBodyFrame(parser: JavascriptAMQPParser, frameSize: number) {
+function parseBodyFrame(parser: Parser, frameSize: number) {
   const data = (parser.buffer as Buffer).slice(parser.offset, frameSize);
   parser.offset += frameSize;
-  return { type: kContent, data };
+  return { type: FrameType.BODY, data };
 }
 
 function parseHeartbeatFrame() {
-  return { type: kHeartbeat };
+  return { type: FrameType.HEARTBEAT };
 }
 
 /**
@@ -280,7 +215,7 @@ function parseHeartbeatFrame() {
  * 8: FrameType.HEARTBEAT
  *
  */
-function parseType(parser: JavascriptAMQPParser, type: number, frameSize: number) {
+function parseType(parser: Parser, type: number, frameSize: number) {
   switch (type) {
     case 1:
       return parseMethodFrame(parser);
@@ -295,7 +230,7 @@ function parseType(parser: JavascriptAMQPParser, type: number, frameSize: number
   }
 }
 
-class JavascriptAMQPParser {
+export class Parser {
   public offset: number = 0;
   public buffer: Buffer | null = null;
   public bitIndex: number = 0;
@@ -312,6 +247,15 @@ class JavascriptAMQPParser {
 
     this.handleResponse = options.handleResponse;
     this.execute = this.execute.bind(this);
+  }
+
+  /**
+   * Make sure it is possible to reset data we are getting
+   */
+  public reset() {
+    this.offset = 0;
+    this.bitIndex = 0;
+    this.buffer = null;
   }
 
   /**
@@ -369,6 +313,7 @@ class JavascriptAMQPParser {
       // Frame
       const response = parseType(this, frameType, frameSize);
 
+      // NOTE: probably not a good idea to crash the process, rather do an error emit
       // Verify that we've correctly parsed everything
       assert.equal(this.buffer[this.offset++], INDICATOR_FRAME_END, kMissingFrame);
 
@@ -381,4 +326,4 @@ class JavascriptAMQPParser {
   }
 }
 
-export default JavascriptAMQPParser;
+export default Parser;

@@ -1,4 +1,4 @@
-import AMQPParser, { HandshakeFrame } from '@microfleet/amqp-parser';
+import * as codec from '@microfleet/amqp-codec';
 import eventToPromise = require('event-to-promise');
 import { EventEmitter } from 'events';
 import Joi = require('joi');
@@ -65,14 +65,16 @@ class Reconnectable extends EventEmitter {
   private stream: net.Socket | tls.TLSSocket | null = null;
   private machineIndex: number = 0;
   private mutableConnectionOptions: tls.TlsOptions | net.NetConnectOpts = {};
-  private parser: AMQPParser;
+  private parser: codec.Parser;
+  private serializer: codec.Serializer;
 
   constructor(opts: InterfaceOptionalConfiguration) {
     super();
     this.config = Joi.attempt(opts, connectionOptions) as InterfaceAMQPConnectionConfiguration;
-    this.parser = new AMQPParser({
-      stringNumbers: true,
+    this.parser = new codec.Parser({
+      handleResponse: this.handleResponse.bind(this),
     });
+    this.serializer = new codec.Serializer();
 
     this.connector = this.config.tls ? tlsConnector : netConnector;
     this.reconnectable = this.connector(this.config.reconnectOptions);
@@ -103,14 +105,24 @@ class Reconnectable extends EventEmitter {
     await eventToPromise(this.reconnectable, 'disconnect');
   }
 
+  /**
+   * Receives
+   */
+  private handleResponse(frameChannel: number, data: codec.InterfaceParsedResponse) {
+    if (data instanceof Error) {
+      return this.emit('error', data);
+    }
+  }
+
   // event handlers
   private onConnect(stream: net.Socket | tls.TLSSocket) {
     this.stream = stream;
-    stream.write(HandshakeFrame);
+    stream.write(codec.HandshakeFrame);
   }
 
   private onDisconnect(err?: Error) {
     this.stream = null;
+    this.parser.reset();
   }
 
   private onReconnect(n: number) {

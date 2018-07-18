@@ -22,7 +22,7 @@ class Channel extends EventEmitter
     @state            = 'closed'
     @waitingCallbacks = {} # channel operations
 
-    @queue   = async.queue(@_taskWorker, 1)
+    @queue = async.queue(@_taskWorker, 1)
 
     @open()
     @transactional = false

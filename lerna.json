@@ -5,5 +5,8 @@
   "packages": [
     "packages/*"
   ],
-  "version": "independent"
+  "version": "independent",
+  "bootstrapConfig": {
+    "strategy": "link:root"
+  }
 }
