@@ -1,23 +1,19 @@
-0 silly input [ 'yarn', 'prepare' ]
+0 silly input [ 'yarn', 'test' ]
 1 silly flags { _: [ 'exec' ],
 1 silly flags   'reject-cycles': false,
 1 silly flags   rejectCycles: false,
-1 silly flags   scope: '@microfleet/amqp-parser',
+1 silly flags   scope: '@microfleet/amqp-connection',
 1 silly flags   command: 'yarn',
-1 silly flags   args: [ 'prepare' ] }
+1 silly flags   args: [ 'test' ] }
 2 verbose rootPath /Users/vitaly/projects/amqp-coffee
 3 info version 2.11.0
 4 silly existsSync /Users/vitaly/projects/amqp-coffee/VERSION
 5 info versioning independent
-6 info scope @microfleet/amqp-parser
-7 error EPACKAGES Errored while collecting packages and package graph
-8 error Error: No packages found that match scope '@microfleet/amqp-parser'
-8 error     at Function.filterPackages (/Users/vitaly/.config/yarn/global/node_modules/lerna/lib/PackageUtilities.js:252:17)
-8 error     at ExecCommand.runPreparations (/Users/vitaly/.config/yarn/global/node_modules/lerna/lib/Command.js:333:60)
-8 error     at /Users/vitaly/.config/yarn/global/node_modules/lerna/lib/Command.js:209:18
-8 error     at new Promise (<anonymous>)
-8 error     at ExecCommand.run (/Users/vitaly/.config/yarn/global/node_modules/lerna/lib/Command.js:193:14)
-8 error     at Object.handler (/Users/vitaly/.config/yarn/global/node_modules/lerna/lib/commands/ExecCommand.js:45:14)
-8 error     at Object.self.runCommand (/Users/vitaly/.config/yarn/global/node_modules/yargs/lib/command.js:233:22)
-8 error     at Object.Yargs.self._parseArgs (/Users/vitaly/.config/yarn/global/node_modules/yargs/yargs.js:990:30)
-8 error     at Object.Yargs.self.parse (/Users/vitaly/.config/yarn/global/node_modules/yargs/yargs.js:532:23)
+6 info scope @microfleet/amqp-connection
+7 silly initialize attempt
+8 silly initialize success
+9 silly execute attempt
+10 error exec Errored while executing 'yarn test' in '@microfleet/amqp-connection'
+11 error execute callback with error
+12 error Error: Command failed: yarn test
+12 error     at Promise.all.then.arr (/Users/vitaly/.config/yarn/global/node_modules/lerna/node_modules/execa/index.js:236:11)

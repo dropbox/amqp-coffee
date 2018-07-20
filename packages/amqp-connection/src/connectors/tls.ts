@@ -3,14 +3,10 @@ import tls = require('tls');
 import { TimeoutError } from '../errors';
 
 export default reconnect(function createConnection(opts: tls.TlsOptions, socketOptions: any = {}) {
-  const socket = tls
-    .connect(opts)
-    .on('secureConnect', function(this: reconnect.InterfaceReconnectableConnection) {
+  const socket = tls.connect(opts)
+    .on('secureConnect', function(this: reconnect.IReconnectableConnection) {
       this.emit('connect');
-    })
-    .on('data', function(this: reconnect.InterfaceReconnectableConnection, data: Buffer) {
-      this.emit('data', data);
-    }) as tls.TLSSocket;
+    });
 
   socket.setNoDelay(socketOptions.noDelay);
   socket.setKeepAlive(socketOptions.keepAlive);
@@ -18,8 +14,8 @@ export default reconnect(function createConnection(opts: tls.TlsOptions, socketO
   if (socketOptions.setTimeout) {
     socket.setTimeout(socketOptions.setTimeout, () => {
       socket.setTimeout(0);
-      // this will cause reconnect
       socket.emit('error', new TimeoutError(`timeout of ${socketOptions.setTimeout} exceeded`));
+      socket.destroy();
     });
 
     socket.once('secureConnect', () => {

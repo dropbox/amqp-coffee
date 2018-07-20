@@ -9,7 +9,7 @@ declare module 'event-to-promise' {
 
   type EventSource = EventEmitter;
 
-  interface InterfaceEventToPromiseOptions {
+  interface IEventToPromiseOptions {
     /* If true, all parameters of the emitted events are put in an array
      * which is used to resolve/reject the promise. (default: `false`)
      */
@@ -29,7 +29,7 @@ declare module 'event-to-promise' {
    * @return         The returned promise has a `cancel()` method which can be used to remove the event listeners.
    *  Note that the promise will never settled if canceled.
    */
-  function eventToPromise(emitter: EventSource, event: string, options?: InterfaceEventToPromiseOptions): Promise<any>;
+  function eventToPromise(emitter: EventSource, event: string, options?: IEventToPromiseOptions): Promise<any>;
 
   namespace eventToPromise {
     /*

@@ -1,30 +1,30 @@
 import * as protocol from './amqp-definitions-0-9-1';
-export { InterfaceClass, InterfaceField } from './amqp-definitions-0-9-1';
+export { IClass, IField } from './amqp-definitions-0-9-1';
 
-export interface InterfaceMethodsTableMethod {
+export interface IMethodsTableMethod {
   name: string;
-  fields: protocol.InterfaceField[];
+  fields: protocol.IField[];
   methodIndex: number;
   classIndex: number;
 }
 
-export interface InterfaceMethodsTable {
+export interface IMethodsTable {
   [classIndex: number]: {
-    [methodIndex: number]: InterfaceMethodsTableMethod,
+    [methodIndex: number]: IMethodsTableMethod,
   };
 }
 
-export interface InterfaceClassesTable {
-  [classIndex: number]: protocol.InterfaceClass;
+export interface IClassesTable {
+  [classIndex: number]: protocol.IClass;
 }
 
-export interface InterfaceMethodByNameTable {
-  [methodName: string]: InterfaceMethodsTableMethod;
+export interface IMethodByNameTable {
+  [methodName: string]: IMethodsTableMethod;
 }
 
-export const methods: InterfaceMethodByNameTable = Object.create(null);
-export const classes: InterfaceClassesTable = Object.create(null);
-export const methodTable: InterfaceMethodsTable = Object.create(null);
+export const methods: IMethodByNameTable = Object.create(null);
+export const classes: IClassesTable = Object.create(null);
+export const methodTable: IMethodsTable = Object.create(null);
 
 for (const classInfo of protocol.classes) {
   classes[classInfo.index] = classInfo;

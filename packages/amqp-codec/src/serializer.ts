@@ -4,14 +4,14 @@ import {
   EndFrame,
   FrameType,
   HeartbeatFrame,
+  IContent,
+  IContentHeader,
+  IMethodFrame,
   INDICATOR_FRAME_END,
-  InterfaceContent,
-  InterfaceContentHeader,
-  InterfaceMethodFrame,
-  InterfaceProtocol,
+  IProtocol,
   MaxFrameSize,
 } from './constants';
-import { classes, InterfaceField, InterfaceMethodsTableMethod } from './protocol';
+import { classes, IField, IMethodsTableMethod } from './protocol';
 
 function isFloat(value: number) {
   return value === +value && value !== (value | 0);
@@ -60,7 +60,7 @@ function serializeInt8(serializer: Serializer, int: number) {
   buffer[serializer.offset++] = (int & 0x00000000000000FF) >> 0;
 }
 
-function serializeBit(serializer: Serializer, param: boolean, field: InterfaceField, nextField?: InterfaceField) {
+function serializeBit(serializer: Serializer, param: boolean, field: IField, nextField?: IField) {
   if (typeof param !== 'boolean') {
     throw new TypeError(`Unmatched field: ${JSON.stringify(field)}`);
   }
@@ -78,7 +78,7 @@ function serializeBit(serializer: Serializer, param: boolean, field: InterfaceFi
   }
 }
 
-function serializeOctet(serializer: Serializer, param: number, field: InterfaceField) {
+function serializeOctet(serializer: Serializer, param: number, field: IField) {
   if (typeof param !== 'number' || param > 0xFF) {
     throw new TypeError(`Unmatched field: ${JSON.stringify(field)}`);
   }
@@ -86,7 +86,7 @@ function serializeOctet(serializer: Serializer, param: number, field: InterfaceF
   serializeInt1(serializer, param);
 }
 
-function serializeShort(serializer: Serializer, param: number, field: InterfaceField) {
+function serializeShort(serializer: Serializer, param: number, field: IField) {
   if (typeof param !== 'number' || param > 0xFFFF) {
     throw new TypeError(`Unmatched field: ${JSON.stringify(field)}`);
   }
@@ -94,7 +94,7 @@ function serializeShort(serializer: Serializer, param: number, field: InterfaceF
   serializeInt2(serializer, param);
 }
 
-function serializeLong(serializer: Serializer, param: number, field: InterfaceField) {
+function serializeLong(serializer: Serializer, param: number, field: IField) {
   if (typeof param !== 'number' || param > 0xFFFFFFFF) {
     throw new TypeError(`Unmatched field: ${JSON.stringify(field)}`);
   }
@@ -102,8 +102,9 @@ function serializeLong(serializer: Serializer, param: number, field: InterfaceFi
   serializeInt4(serializer, param);
 }
 
-function serializeShortString(serializer: Serializer, input: string, field: InterfaceField) {
+function serializeShortString(serializer: Serializer, input: string, field: IField) {
   if (typeof input !== 'string') {
+    console.info(input);
     throw new TypeError('param must be a string');
   }
 
@@ -142,7 +143,7 @@ function serializeDate(serializer: Serializer, param: Date) {
   serializeInt8(serializer, param.valueOf() / 1e3);
 }
 
-function serializeArray(serializer: Serializer, param: any[], field: InterfaceField) {
+function serializeArray(serializer: Serializer, param: any[], field: IField) {
   // Save our position so that we can go back and write the byte length of this array
   // at the beginning of the packet (once we have serialized all elements).
   const lengthIndex = serializer.offset;
@@ -159,7 +160,7 @@ function serializeArray(serializer: Serializer, param: any[], field: InterfaceFi
   serializer.offset = endIndex;
 }
 
-function serializeValue(serializer: Serializer, param: any, field: InterfaceField) {
+function serializeValue(serializer: Serializer, param: any, field: IField) {
   switch (typeof param) {
     case 'string':
       serializer.buffer[serializer.offset++] = AMQPTypes.STRING;
@@ -208,7 +209,7 @@ function serializeValue(serializer: Serializer, param: any, field: InterfaceFiel
   }
 }
 
-function serializeLongString(serializer: Serializer, param: any, field: InterfaceField) {
+function serializeLongString(serializer: Serializer, param: any, field: IField) {
   if (typeof param === 'string') {
     const byteLength = Buffer.byteLength(param, 'utf8');
     serializeInt4(serializer, byteLength);
@@ -223,7 +224,7 @@ function serializeLongString(serializer: Serializer, param: any, field: Interfac
   }
 }
 
-function serializeTable(serializer: Serializer, param: any, field: InterfaceField) {
+function serializeTable(serializer: Serializer, param: any, field: IField) {
   if (typeof param !== 'object') {
     throw new TypeError('param must be an object');
   }
@@ -264,12 +265,14 @@ const kFieldDefaults = Object.setPrototypeOf({
   shortstr: '',
 }, null);
 
-function serializeFieldStrict(serializer: Serializer, args: any, field: InterfaceField, nextField?: InterfaceField) {
+function serializeFieldStrict(serializer: Serializer, args: any, field: IField, nextField?: IField) {
   const { name, domain } = field;
 
   if (hasOwnProperty.call(args, name) === false) {
     if (name.startsWith('reserved')) {
-      args[name] = kFieldDefaults[domain] || true;
+      args[name] = hasOwnProperty.call(kFieldDefaults, domain)
+        ? kFieldDefaults[domain]
+        : true;
     } else if (name === 'noWait') {
       args[name] = false;
     } else {
@@ -280,7 +283,7 @@ function serializeFieldStrict(serializer: Serializer, args: any, field: Interfac
   FIELD_TYPE_SELECTOR[domain](serializer, args[name], field, nextField);
 }
 
-function serializeFieldLoose(serializer: Serializer, args: any, field: InterfaceField, nextField?: InterfaceField) {
+function serializeFieldLoose(serializer: Serializer, args: any, field: IField, nextField?: IField) {
   const { name, domain } = field;
 
   if (hasOwnProperty.call(args, name) === false) {
@@ -292,7 +295,7 @@ function serializeFieldLoose(serializer: Serializer, args: any, field: Interface
 
 function serializeFields(
   serializer: Serializer,
-  fields: InterfaceMethodsTableMethod['fields'],
+  fields: IMethodsTableMethod['fields'],
   args: object,
   strict: boolean,
 ) {
@@ -305,7 +308,7 @@ function serializeFields(
   }
 }
 
-function encodeMethod(serializer: Serializer, channel: number, data: InterfaceMethodFrame): Buffer {
+function encodeMethod(serializer: Serializer, channel: number, data: IMethodFrame): Buffer {
   serializer.offset = 1; // reset used offset
   const { buffer } = serializer;
   const { method } = data;
@@ -340,7 +343,7 @@ function encodeMethod(serializer: Serializer, channel: number, data: InterfaceMe
   return methodBuffer;
 }
 
-function encodeHeader(serializer: Serializer, channel: number, args: InterfaceContentHeader): Buffer {
+function encodeHeader(serializer: Serializer, channel: number, args: IContentHeader): Buffer {
   const { buffer } = serializer;
   const classInfo = classes[60];
 
@@ -407,7 +410,7 @@ function encodeHeader(serializer: Serializer, channel: number, args: InterfaceCo
   return headerBuffer;
 }
 
-function encodeBody(serializer: Serializer, channel: number, args: InterfaceContent): Buffer[] {
+function encodeBody(serializer: Serializer, channel: number, args: IContent): Buffer[] {
   const body = args.data;
 
   if (Buffer.isBuffer(body) === false) {
@@ -477,7 +480,7 @@ export class Serializer {
     this.maxFrameSize = frameSize;
   }
 
-  public encode(channel: number, data: InterfaceProtocol): Buffer {
+  public encode(channel: number, data: IProtocol): Buffer {
     return encodeSelector[data.type](this, channel, data);
   }
 }

@@ -1,12 +1,12 @@
 // tslint:disable:object-literal-sort-keys
-import { InterfaceClass, InterfaceMethodsTableMethod } from './protocol';
+import { IClass, IMethodsTableMethod } from './protocol';
 
 export const kMissingFrame = 'missing end frame';
 export const kUnknownFrameType = 'unknown frametype';
 export const MaxFrameSize = 131072;
 export const MaxEmptyFrameSize = 8;
 
-export const AMQPTypes = Object.setPrototypeOf({
+export const AMQPTypes: IAMQPTypes = Object.setPrototypeOf({
   ARRAY: 'A'.charCodeAt(0),
   BOOLEAN: 't'.charCodeAt(0),
   BOOLEAN_FALSE: '\x00',
@@ -26,43 +26,71 @@ export const AMQPTypes = Object.setPrototypeOf({
   _64BIT_FLOAT: 'd'.charCodeAt(0),
 }, null);
 
+export interface IAMQPTypes {
+  ARRAY: number;
+  BOOLEAN: number;
+  BOOLEAN_FALSE: string;
+  BOOLEAN_TRUE: string;
+  BYTE_ARRAY: number;
+  DECIMAL: number;
+  HASH: number;
+  INTEGER: number;
+  SIGNED_16BIT: number;
+  SIGNED_64BIT: number;
+  SIGNED_8BIT: number;
+  STRING: number;
+  TEN: number;
+  TIME: number;
+  VOID: number;
+  _32BIT_FLOAT: number;
+  _64BIT_FLOAT: number;
+}
+
 export const INDICATOR_FRAME_END = 206;
 
-export const FrameType = Object.setPrototypeOf({
+export const FrameType: IFrameType = Object.setPrototypeOf({
   METHOD: 1,
   HEADER: 2,
   BODY: 3,
   HEARTBEAT: 8,
 }, null);
 
+export interface IFrameType {
+  METHOD: number;
+  HEADER: number;
+  BODY: number;
+  HEARTBEAT: number;
+}
+
 export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1));
 export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END]);
 export const EndFrame = Buffer.from([INDICATOR_FRAME_END]);
+export const ServiceChannel = 0;
 
-export type InterfaceProtocol = InterfaceMethodFrame
-  | InterfaceContentHeader
-  | InterfaceContent
-  | InterfaceHeartbeat;
+export type IProtocol = IMethodFrame
+  | IContentHeader
+  | IContent
+  | IHeartbeat;
 
-export interface InterfaceMethodFrame {
+export interface IMethodFrame {
   type: number;
-  method: InterfaceMethodsTableMethod;
+  method: IMethodsTableMethod;
   args: any;
 }
 
-export interface InterfaceContentHeader {
+export interface IContentHeader {
   type: number;
-  classInfo: InterfaceClass;
+  classInfo: IClass;
   weight: number;
   properties: any;
   size: number;
 }
 
-export interface InterfaceContent {
+export interface IContent {
   type: number;
   data: Buffer;
 }
 
-export interface InterfaceHeartbeat {
+export interface IHeartbeat {
   type: number;
 }

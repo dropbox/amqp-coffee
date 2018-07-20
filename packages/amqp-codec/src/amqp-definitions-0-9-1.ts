@@ -1,26 +1,26 @@
 // tslint:disable:object-literal-sort-keys
 
-export type InterfaceConstant = [number, string];
+export type IConstant = [number, string];
 
-export interface InterfaceField {
+export interface IField {
   name: string;
   domain: string;
 }
 
-export interface InterfaceMethod {
+export interface IMethod {
   name: string;
   index: number;
-  fields: InterfaceField[];
+  fields: IField[];
 }
 
-export interface InterfaceClass {
+export interface IClass {
   name: string;
   index: number;
-  fields: InterfaceField[];
-  methods: InterfaceMethod[];
+  fields: IField[];
+  methods: IMethod[];
 }
 
-export const constants: InterfaceConstant[] = [
+export const constants: IConstant[] = [
   [1, 'frameMethod'],
   [2, 'frameHeader'],
   [3, 'frameBody'],
@@ -47,7 +47,7 @@ export const constants: InterfaceConstant[] = [
   [541, 'internalError'],
 ];
 
-export const classes: InterfaceClass[] = [
+export const classes: IClass[] = [
   {
     name: 'connection',
     index: 10,

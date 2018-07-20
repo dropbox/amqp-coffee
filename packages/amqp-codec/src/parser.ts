@@ -5,21 +5,22 @@ import {
   AMQPTypes,
   FrameType,
   INDICATOR_FRAME_END,
-  InterfaceProtocol,
+  IProtocol,
   kMissingFrame,
   kUnknownFrameType,
 } from './constants';
-import { classes, InterfaceField, InterfaceMethodsTableMethod, methodTable } from './protocol';
+import { classes, IField, IMethodsTableMethod, methodTable } from './protocol';
 
-export interface InterfaceConfiguration {
-  handleResponse: InterfaceHandleResponse;
+export interface IConfiguration {
+  handleResponse: HandleResponse;
 }
 
-type InterfaceHandleResponse = (channel: number, datum: InterfaceProtocol | Error) => void;
+export type ParsedResponse = IProtocol | Error;
+export type HandleResponse = (channel: number, datum: ParsedResponse) => void;
 
 const HEADER_SIZE = 7;
 const FIELD_TYPE_SELECTOR = Object.setPrototypeOf({
-  bit(parser: Parser, nextField?: InterfaceField): boolean {
+  bit(parser: Parser, nextField?: IField): boolean {
     const value = ((parser.buffer as Buffer)[parser.offset] & (1 << parser.bitIndex))
       ? true
       : false;
@@ -149,7 +150,7 @@ function parseTable(parser: Parser) {
   return table;
 }
 
-function parseFields(parser: Parser, fields: InterfaceMethodsTableMethod['fields']) {
+function parseFields(parser: Parser, fields: IMethodsTableMethod['fields']) {
   const args = Object.create(null);
 
   // reset bit index
@@ -234,9 +235,9 @@ export class Parser {
   public offset: number = 0;
   public buffer: Buffer | null = null;
   public bitIndex: number = 0;
-  private handleResponse: InterfaceConfiguration['handleResponse'];
+  private handleResponse: IConfiguration['handleResponse'];
 
-  constructor(options: InterfaceConfiguration) {
+  constructor(options: IConfiguration) {
     if (!options) {
       throw new TypeError('Options are mandatory.');
     }
@@ -288,9 +289,9 @@ export class Parser {
       this.offset = 0;
     }
 
-    // ensure that we have more than 7 bytes -
+    // ensure that we have at least 8 bytes to read in the buffer
     // so that there is a chance we can parse a complete header + frame
-    if (this.offset + HEADER_SIZE < this.buffer.length) {
+    if (this.offset + HEADER_SIZE >= this.buffer.length) {
       return;
     }
 
