@@ -1,10 +1,22 @@
 import reconnect = require('reconnect-core');
 import tls = require('tls');
-import { TimeoutError } from '../errors';
+import { TimeoutError } from '../../errors';
 
-export default reconnect(function createConnection(opts: tls.TlsOptions, socketOptions: any = {}) {
+export interface ITlsConnectOpts {
+  opts: tls.TlsOptions;
+  socket?: {
+    noDelay?: boolean,
+    keepAlive?: boolean,
+    setTimeout?: number,
+  };
+}
+
+export default reconnect<ITlsConnectOpts, tls.TLSSocket>(function createConnection(config: ITlsConnectOpts) {
+  const opts = config.opts;
+  const socketOptions = config.socket || {};
+
   const socket = tls.connect(opts)
-    .on('secureConnect', function(this: reconnect.IReconnectableConnection) {
+    .on('secureConnect', function(this: reconnect.Instance<tls.TlsOptions, tls.TLSSocket>) {
       this.emit('connect');
     });
 

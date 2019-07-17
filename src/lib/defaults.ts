@@ -1,4 +1,4 @@
-import Joi = require('joi')
+import Joi = require('@hapi/joi')
 import readPkgUp = require('read-pkg-up')
 import os = require('os')
 import { MaxFrameSize } from './constants'

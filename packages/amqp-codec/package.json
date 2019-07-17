@@ -5,45 +5,22 @@
   "main": "dist/index.js",
   "typings": "./dist/index.d.ts",
   "scripts": {
-    "test": "jest",
+    "test": "jest --passWithNoTests -c ../../jest.config.js __tests__/*.ts",
     "prepare": "rimraf ./dist; tsc -p tsconfig.build.json"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/debug": "^0.0.30",
-    "@types/jest": "^23.3.0",
-    "@types/joi": "^13.4.0",
-    "@types/node": "^10.5.2",
-    "jest": "^23.4.1",
+    "@types/debug": "^4.1.4",
+    "@types/jest": "^24.0.11",
+    "@types/hapi__joi": "^15.0.0",
+    "@types/node": "^11.13.7",
+    "jest": "^24.7.1",
     "rimraf": "^2.6.2",
-    "ts-jest": "^23.0.1",
-    "tslint": "^5.11.0",
-    "typescript": "^2.9.2"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "ts",
-      "js",
-      "json"
-    ],
-    "transform": {
-      "^.+\\.(ts|tsx)$": "ts-jest"
-    },
-    "globals": {
-      "ts-jest": {
-        "tsConfigFile": "tsconfig.json",
-        "skipBabel": true
-      }
-    },
-    "testMatch": [
-      "**/__tests__/*.+(ts|tsx|js)"
-    ],
-    "testEnvironment": "node",
-    "reporters": [
-      "default"
-    ]
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.16.0",
+    "typescript": "^3.4.5"
   },
   "dependencies": {
     "string_decoder": "^1.1.1"

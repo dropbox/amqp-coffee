@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as tls from 'tls'
-import Joi = require('joi')
+import Joi = require('@hapi/joi')
 import { CONNECTION_STATE, HeartbeatFrame } from './constants'
 import { connection as connectionSchema } from './defaults'
 const debug = require('debug').debug('amqp:Connection')

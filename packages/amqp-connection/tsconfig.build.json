@@ -6,5 +6,8 @@
   },
   "exclude": [
     "__tests__"
+  ],
+  "references": [
+    { "path": "../amqp-codec/tsconfig.build.json" }
   ]
 }

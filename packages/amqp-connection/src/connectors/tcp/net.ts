@@ -1,9 +1,19 @@
 import net = require('net');
 import reconnect = require('reconnect-core');
-import { TimeoutError } from '../errors';
+import { TimeoutError } from '../../errors';
 
-export default reconnect(function createConnection(opts: net.NetConnectOpts, socketOptions: any = {}) {
-  const socket = net.connect(opts);
+export interface INetConnectOpts {
+  opts: net.NetConnectOpts;
+  socket?: {
+    noDelay?: boolean,
+    keepAlive?: boolean,
+    setTimeout?: number,
+  };
+}
+
+export default reconnect<INetConnectOpts, net.Socket>(function createConnection(config: INetConnectOpts) {
+  const socket = net.connect(config.opts);
+  const socketOptions = config.socket || {};
 
   socket.setNoDelay(socketOptions.noDelay);
   socket.setKeepAlive(socketOptions.keepAlive);

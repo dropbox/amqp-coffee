@@ -104,7 +104,6 @@ function serializeLong(serializer: Serializer, param: number, field: IField) {
 
 function serializeShortString(serializer: Serializer, input: string, field: IField) {
   if (typeof input !== 'string') {
-    console.info(input);
     throw new TypeError('param must be a string');
   }
 
@@ -130,11 +129,17 @@ function serializeShortString(serializer: Serializer, input: string, field: IFie
 function serializeBuffer(serializer: Serializer, param: Buffer) {
   const byteLength = param.length;
   serializeInt4(serializer, byteLength);
+
+  if (byteLength + serializer.offset >= serializer.buffer.length) {
+    throw new TypeError('Not enough space in buffer');
+  }
+
   param.copy(serializer.buffer, serializer.offset, 0, byteLength);
   serializer.offset += byteLength;
 }
 
 function serializeDouble(serializer: Serializer, param: number) {
+  assert(serializer.offset + 8 <= serializer.buffer.length, 'write out of bounds');
   serializer.buffer.writeDoubleBE(param, serializer.offset);
   serializer.offset += 8;
 }
@@ -161,6 +166,9 @@ function serializeArray(serializer: Serializer, param: any[], field: IField) {
 }
 
 function serializeValue(serializer: Serializer, param: any, field: IField) {
+  // at least 2 bytes needed
+  assert(serializer.offset + 1 < serializer.buffer.length, 'buffer overflow');
+
   switch (typeof param) {
     case 'string':
       serializer.buffer[serializer.offset++] = AMQPTypes.STRING;
@@ -187,7 +195,7 @@ function serializeValue(serializer: Serializer, param: any, field: IField) {
 
     case 'boolean':
       serializer.buffer[serializer.offset++] = AMQPTypes.BOOLEAN;
-      serializer.buffer[serializer.offset++] = param;
+      serializer.buffer[serializer.offset++] = +param; // so its 1 or 0
       break;
 
     default:
