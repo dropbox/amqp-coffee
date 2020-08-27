@@ -1,12 +1,11 @@
-// tslint:disable:object-literal-sort-keys
-import { IClass, IMethodsTableMethod } from './protocol';
+import { Class, MethodsTableMethod } from './protocol'
 
-export const kMissingFrame = 'missing end frame';
-export const kUnknownFrameType = 'unknown frametype';
-export const MaxFrameSize = 131072;
-export const MaxEmptyFrameSize = 8;
+export const kMissingFrame = 'missing end frame'
+export const kUnknownFrameType = 'unknown frametype'
+export const MaxFrameSize = 131072
+export const MaxEmptyFrameSize = 8
 
-export const AMQPTypes: IAMQPTypes = Object.setPrototypeOf({
+export const AMQPTypes = {
   ARRAY: 'A'.charCodeAt(0),
   BOOLEAN: 't'.charCodeAt(0),
   BOOLEAN_FALSE: '\x00',
@@ -24,73 +23,56 @@ export const AMQPTypes: IAMQPTypes = Object.setPrototypeOf({
   VOID: 'v'.charCodeAt(0),
   _32BIT_FLOAT: 'f'.charCodeAt(0),
   _64BIT_FLOAT: 'd'.charCodeAt(0),
-}, null);
-
-export interface IAMQPTypes {
-  ARRAY: number;
-  BOOLEAN: number;
-  BOOLEAN_FALSE: string;
-  BOOLEAN_TRUE: string;
-  BYTE_ARRAY: number;
-  DECIMAL: number;
-  HASH: number;
-  INTEGER: number;
-  SIGNED_16BIT: number;
-  SIGNED_64BIT: number;
-  SIGNED_8BIT: number;
-  STRING: number;
-  TEN: number;
-  TIME: number;
-  VOID: number;
-  _32BIT_FLOAT: number;
-  _64BIT_FLOAT: number;
 }
 
-export const INDICATOR_FRAME_END = 206;
+Object.setPrototypeOf(AMQPTypes, null)
 
-export const FrameType: IFrameType = Object.setPrototypeOf({
-  METHOD: 1,
-  HEADER: 2,
-  BODY: 3,
-  HEARTBEAT: 8,
-}, null);
+export type AMQPDataTypes = string 
+  | number 
+  | boolean 
+  | Date 
+  | Buffer
+  | AMQPDataTypes[]
+  | { [key: string]: AMQPDataTypes }
 
-export interface IFrameType {
-  METHOD: number;
-  HEADER: number;
-  BODY: number;
-  HEARTBEAT: number;
+export const INDICATOR_FRAME_END = 206
+
+export const enum FrameType {
+  METHOD = 1,
+  HEADER = 2,
+  BODY = 3,
+  HEARTBEAT = 8,
 }
 
-export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1));
-export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END]);
-export const EndFrame = Buffer.from([INDICATOR_FRAME_END]);
-export const ServiceChannel = 0;
+export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1))
+export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END])
+export const EndFrame = Buffer.from([INDICATOR_FRAME_END])
+export const ServiceChannel = 0
 
-export type IProtocol = IMethodFrame
-  | IContentHeader
-  | IContent
-  | IHeartbeat;
+export type Protocol = MethodFrame
+  | ContentHeader
+  | Content
+  | Heartbeat
 
-export interface IMethodFrame {
-  type: number;
-  method: IMethodsTableMethod;
+export type MethodFrame = {
+  type: FrameType.METHOD;
+  method: MethodsTableMethod;
   args: any;
 }
 
-export interface IContentHeader {
-  type: number;
-  classInfo: IClass;
+export type ContentHeader = {
+  type: FrameType.HEADER;
+  classInfo: Class;
   weight: number;
-  properties: any;
+  properties: Record<string, unknown>;
   size: number;
 }
 
-export interface IContent {
-  type: number;
+export type Content = {
+  type: FrameType.BODY;
   data: Buffer;
 }
 
-export interface IHeartbeat {
-  type: number;
+export type Heartbeat = {
+  type: FrameType.HEARTBEAT;
 }

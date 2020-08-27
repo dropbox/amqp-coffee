@@ -24,37 +24,39 @@
   ],
   "main": "./bin/src/amqp.js",
   "scripts": {
-    "semantic-release": "semantic-release",
-    "jest": "lerna run test --stream",
-    "test": "yarn lint && yarn jest",
-    "lint": "lerna run lint --stream",
-    "prepare": "lerna run prepare",
-    "prebuild": "yarn clean",
-    "build": "tsc -b packages/*/tsconfig.build.json",
-    "clean": "rimraf packages/*/lib",
-    "commitmsg": "commitlint -e $GIT_PARAMS",
-    "preparecommitmsg": "./node_modules/@makeomatic/deploy/git-hooks/prepare-commit-msg $GIT_PARAMS"
+    "prebootstrap": "yarn --frozen-lockfile --check-files",
+    "bootstrap": "lerna bootstrap -- --frozen-lockfile --check-files",
+    "lint": "lerna run lint --parallel",
+    "pretest": "yarn lint && yarn compile",
+    "test": "lerna run test --stream",
+    "precompile": "yarn clean",
+    "compile": "tsc -b ./tsconfig.build.json",
+    "clean": "rimraf packages/*/lib packages/*/*.tsbuildinfo",
+    "semantic-release": "yarn compile && lerna publish --conventional-commits --create-release=github --yes"
   },
   "dependencies": {
-    "async": "^2.6.1",
-    "bson": "^4.0.2",
+    "@hapi/joi": "^17.1.1",
+    "async": "^3.2.0",
+    "bson": "^4.1.0",
     "debug": "^4.1.1",
-    "@hapi/joi": "^15.0.0",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.20",
     "lodash.defer": "^4.1.0"
   },
   "devDependencies": {
-    "@types/async": "^2.0.49",
-    "@types/hapi__joi": "^15.0.0",
+    "@makeomatic/deploy": "^10.3.0",
+    "@types/async": "^3.2.3",
+    "@types/hapi__joi": "^17.1.4",
     "@types/lodash.defer": "^4.1.3",
-    "@types/node": "^11.13.7",
-    "coffeescript": "^2.4.1",
+    "@types/node": "^14.6.0",
+    "coffeescript": "^2.5.1",
+    "cross-env": "^7.0.2",
+    "eslint-config-makeomatic": "^5.0.2",
     "istanbul": "0.4.5",
-    "mocha": "^6.1.4",
+    "mocha": "^8.1.2",
     "should": "13.2.3",
-    "typescript": "^3.4.5",
-    "underscore": "^1.9.1",
-    "uuid": "^3.3.2"
+    "typescript": "^4.0.2",
+    "underscore": "^1.10.2",
+    "uuid": "^8.3.0"
   },
   "repository": {
     "type": "git",
@@ -62,5 +64,11 @@
   },
   "engines": {
     "node": ">=8.9.0"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -e $HUSKY_GIT_PARAMS",
+      "prepare-commit-msg": "./node_modules/@makeomatic/deploy/git-hooks/prepare-commit-msg $HUSKY_GIT_PARAMS"
+    }
   }
 }

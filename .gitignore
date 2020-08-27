@@ -8,3 +8,4 @@ npm-debug.log
 /test/ssl/testca
 /test/ssl/server
 /test/ssl/client
+packages/*/lib

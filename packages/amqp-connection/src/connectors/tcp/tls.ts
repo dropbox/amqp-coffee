@@ -1,9 +1,9 @@
 import reconnect = require('reconnect-core');
 import tls = require('tls');
-import { TimeoutError } from '../../errors';
+import { TimeoutError } from '../../errors'
 
-export interface ITlsConnectOpts {
-  opts: tls.TlsOptions;
+export interface TlsConnectOpts {
+  opts: tls.ConnectionOptions;
   socket?: {
     noDelay?: boolean,
     keepAlive?: boolean,
@@ -11,29 +11,28 @@ export interface ITlsConnectOpts {
   };
 }
 
-export default reconnect<ITlsConnectOpts, tls.TLSSocket>(function createConnection(config: ITlsConnectOpts) {
-  const opts = config.opts;
-  const socketOptions = config.socket || {};
+export default reconnect<TlsConnectOpts, tls.TLSSocket>(function createConnection(config: TlsConnectOpts) {
+  const opts = config.opts
+  const socketOptions = config.socket || {}
 
-  const socket = tls.connect(opts)
-    .on('secureConnect', function(this: reconnect.Instance<tls.TlsOptions, tls.TLSSocket>) {
-      this.emit('connect');
-    });
+  const socket = tls.connect(opts).on('secureConnect', () => {
+    this.emit('connect')
+  })
 
-  socket.setNoDelay(socketOptions.noDelay);
-  socket.setKeepAlive(socketOptions.keepAlive);
+  socket.setNoDelay(socketOptions.noDelay)
+  socket.setKeepAlive(socketOptions.keepAlive)
 
   if (socketOptions.setTimeout) {
     socket.setTimeout(socketOptions.setTimeout, () => {
-      socket.setTimeout(0);
-      socket.emit('error', new TimeoutError(`timeout of ${socketOptions.setTimeout} exceeded`));
-      socket.destroy();
-    });
+      socket.setTimeout(0)
+      socket.emit('error', new TimeoutError(`timeout of ${socketOptions.setTimeout} exceeded`))
+      socket.destroy()
+    })
 
     socket.once('secureConnect', () => {
-      socket.setTimeout(0);
-    });
+      socket.setTimeout(0)
+    })
   }
 
-  return socket;
-});
+  return socket
+})

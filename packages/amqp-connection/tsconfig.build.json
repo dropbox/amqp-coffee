@@ -1,13 +1,20 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "./tsconfig.json",
+  "references": [{
+    "path": "../amqp-codec/tsconfig.build.json"
+  }],
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
+    "rootDir": "./src",
+    "outDir": "./lib"
   },
-  "exclude": [
-    "__tests__"
+  "include": [
+    "./src/**/*.ts"
   ],
-  "references": [
-    { "path": "../amqp-codec/tsconfig.build.json" }
+  "exclude": [
+    "**/node_modules/**",
+    "lib",
+    "dist",
+    "**.test.ts",
+    "**.spec.ts"
   ]
 }

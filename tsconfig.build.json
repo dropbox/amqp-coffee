@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [],
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "references": [{
+    "path": "./packages/amqp-codec/tsconfig.build.json"
+  }, {
+    "path": "./packages/amqp-connection/tsconfig.build.json"
+  }, {
+    "path": "./packages/amqp-core/tsconfig.build.json"
+  }]
+}
