@@ -1,20 +1,24 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-
-import { strict as assert } from 'assert'
 import { Buffer } from 'buffer'
 import {
   AMQPTypes,
   FrameType,
   INDICATOR_FRAME_END,
-  Protocol,
   kMissingFrame,
   kUnknownFrameType,
+} from './constants'
+import { 
+  classes,
+  isClassMethodId,
+  isClassIndex,
+  Field,
+  classMethodsTable,
+  Protocol,
   MethodFrame,
   ContentHeader,
   Content,
   Heartbeat
-} from './constants'
-import { classes, Field, MethodsTableMethod, methodTable } from './protocol'
+} from './protocol'
 
 export interface Configuration {
   handleResponse: HandleResponse;
@@ -158,7 +162,7 @@ function parseTable(parser: Parser): Record<string, unknown> {
   return table
 }
 
-function parseFields(parser: Parser, fields: MethodsTableMethod['fields']): Record<string, unknown> {
+function parseFields(parser: Parser, fields: Field[]): Record<string, unknown> {
   const args = Object.create(null)
 
   // reset bit index
@@ -174,20 +178,27 @@ function parseFields(parser: Parser, fields: MethodsTableMethod['fields']): Reco
 function parseMethodFrame(parser: Parser): MethodFrame | Error {
   const classId = parseInt2(parser)
   const methodId = parseInt2(parser)
+  const classMethodId = `${classId}_${methodId}`
 
-  if (methodTable[classId] === undefined || methodTable[classId][methodId] === undefined) {
+  if (!isClassMethodId(classMethodId)) {
     return new Error(`bad classId, methodId pair: ${classId}, ${methodId}`)
   }
 
-  const method = methodTable[classId][methodId]
+  const method = classMethodsTable[classMethodId]
+
   const args = parseFields(parser, method.fields)
   return { type: FrameType.METHOD, method, args }
 }
 
-function parseHeaderFrame(parser: Parser): ContentHeader {
+function parseHeaderFrame(parser: Parser): ContentHeader | Error {
   const classIndex = parseInt2(parser)
   const weight = parseInt2(parser)
   const size = parseInt8(parser)
+
+  if (!isClassIndex(classIndex)) {
+    return new Error(`bad classId, methodId pair: ${classIndex}`)
+  }
+
   const classInfo = classes[classIndex]
   const propertyFlags = parseInt2(parser)
   const fields = []
@@ -313,10 +324,13 @@ export class Parser {
 
       // NOTE: probably not a good idea to crash the process, rather do an error emit
       // Verify that we've correctly parsed everything
-      assert.strictEqual(this.buffer[this.offset++], INDICATOR_FRAME_END, kMissingFrame)
-
-      // pass the response on to the client library
-      this.handleResponse(frameChannel, response)
+      if (this.buffer[this.offset++] !== INDICATOR_FRAME_END) {
+        this.offset = 0 // reset offset
+        this.handleResponse(frameChannel, kMissingFrame)
+      } else {
+        // pass the response on to the client library
+        this.handleResponse(frameChannel, response)
+      }
     }
 
     // once we've parsed the buffer completely -> remove ref to it

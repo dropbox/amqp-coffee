@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "typings": "./dist/index.d.ts",
   "scripts": {
+    "gen-protocol": "npx ts-node ./bin/serialize.ts",
     "lint": "eslint './src/**/*.ts'",
     "test": "yarn lint",
     "compile": "tsc -b ./tsconfig.build.json"

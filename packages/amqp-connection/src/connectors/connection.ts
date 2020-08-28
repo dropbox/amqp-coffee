@@ -1,9 +1,22 @@
-import * as codec from '@microfleet/amqp-codec'
+
 import assert = require('assert');
 import { EventEmitter, once } from 'events'
 import net = require('net');
 import rc = require('reconnect-core');
 import tls = require('tls');
+import { 
+  MethodsTableMethod, 
+  MethodFrame, 
+  FrameType, 
+  methods, 
+  Parser, 
+  Serializer, 
+  ServiceChannel, 
+  ParsedResponse, 
+  HeartbeatFrame,
+  HandshakeFrame,
+  MethodArgTypes,
+} from '@microfleet/amqp-codec'
 import {
   HeartbeatError,
   ServerCloseRequest,
@@ -32,6 +45,8 @@ export interface ConnectionConfig {
     noDelay?: boolean;
     setTimeout?: number;
   };
+  temporaryChannelTimeout: number;
+  temporaryChannelTimeoutCheck: number;
 }
 
 export interface ClientProperties {
@@ -63,9 +78,9 @@ export const enum CONNECTION_STATUS {
   CLOSING = "CLOSING",
 }
 
-const kCloseFrame: codec.MethodFrame = {
-  type: codec.FrameType.METHOD,
-  method: codec.Protocol.methods.connectionClose,
+const kCloseFrame: MethodFrame = {
+  type: FrameType.METHOD,
+  method: methods.connectionClose,
   args: { classId: 0, methodId: 0, replyCode: 200, replyText: 'closed' },
 }
 
@@ -78,13 +93,13 @@ export class Connection extends EventEmitter {
   private config: ConnectionConfig;
   private connector: typeof netConnector | typeof tlsConnector;
   private reconnectable: ReturnType<typeof netConnector | typeof tlsConnector>;
-  private parser: codec.Parser;
-  private serializer: codec.Serializer;
+  private parser: Parser;
+  private serializer: Serializer;
   private connectionOptions: tls.TlsOptions | net.NetConnectOpts;
   private stream: Socket | null = null;
   private timers: { [name: string]: Timer } = Object.create(null);
 
-  constructor(config: ConnectionConfig, serializer: codec.Serializer) {
+  constructor(config: ConnectionConfig, serializer: Serializer) {
     super()
     this.config = config
     this.serializer = serializer
@@ -115,7 +130,7 @@ export class Connection extends EventEmitter {
     this.reconnectable.on('error', this.onError.bind(this))
 
     // incoming data parser
-    this.parser = new codec.Parser({ handleResponse: this.handleResponse })
+    this.parser = new Parser({ handleResponse: this.handleResponse })
   }
 
   private emitClosedError() {
@@ -139,7 +154,7 @@ export class Connection extends EventEmitter {
     if (this.stream !== null) {
       // request graceful close
       if (this.state === CONNECTION_STATUS.READY) {
-        this.stream.write(this.serializer.encode(codec.ServiceChannel, kCloseFrame))
+        this.stream.write(this.serializer.encode(ServiceChannel, kCloseFrame))
       } else {
         this.reconnectable.disconnect()
       }
@@ -169,7 +184,15 @@ export class Connection extends EventEmitter {
     await once(this, 'closed')
   }
 
-  public send(data: Buffer, doNotRefresh?: boolean): boolean | null {
+  public sendMethod<T extends MethodsTableMethod>(channel: number, method: T, args: MethodArgTypes[T['name']]): boolean | null {
+    return this.send(this.serializer.encode(channel, {
+      type: FrameType.METHOD,
+      method: method,
+      args,
+    }))
+  }
+
+  private send(data: Buffer, doNotRefresh?: boolean): boolean | null {
     if (this.stream === null) {
       throw new Error('stream closed')
     }
@@ -191,7 +214,7 @@ export class Connection extends EventEmitter {
   /**
    * Receives
    */
-  private handleResponse(frameChannel: number, data: codec.ParsedResponse): void {
+  private handleResponse(frameChannel: number, data: ParsedResponse): void {
     if (data instanceof Error) {
       this.stream?.emit('error', data, frameChannel)
       return
@@ -201,23 +224,23 @@ export class Connection extends EventEmitter {
     this.onHeartbeat()
 
     // skip heartbeat frame - already processed
-    if (data.type === codec.FrameType.HEARTBEAT) {
+    if (data.type === FrameType.HEARTBEAT) {
       return
     }
 
     // channel can have header/body stuff, 0 is underlaying connection
     // and can only have method
-    if (frameChannel > codec.ServiceChannel) {
+    if (frameChannel > ServiceChannel) {
       this.emit('command', frameChannel, data)
       return
     }
 
     // ensure that we do not get some weird shit here
-    assert(data.type === codec.FrameType.METHOD, `invalid frame type for channel 0: ${data.type}`)
+    assert(data.type === FrameType.METHOD, `invalid frame type for channel 0: ${data.type}`)
     const { method, args } = data
 
     switch (method) {
-      case codec.Protocol.methods.connectionStart:
+      case methods.connectionStart:
         if (args.versionMajor !== 0 && args.versionMinor !== 9) {
           this.reconnectable.reconnect = false
           this.stream?.emit('error', new ServerErrorMismatch(args))
@@ -226,19 +249,15 @@ export class Connection extends EventEmitter {
 
         this.setState(CONNECTION_STATUS.TUNING)
         this.serverProperties = args.serverProperties
-        this.send(this.serializer.encode(codec.ServiceChannel, {
-          type: codec.FrameType.METHOD,
-          method: codec.Protocol.methods.connectionStartOk,
-          args: {
-            mechanism: 'AMQPLAIN',
-            locale: 'en_US',
-            clientProperties: this.config.clientProperties,
-            response: { LOGIN: this.config.login, PASSWORD: this.config.password },
-          },
-        }))
+        this.sendMethod(ServiceChannel, methods.connectionStartOk, {
+          mechanism: 'AMQPLAIN',
+          locale: 'en_US',
+          clientProperties: this.config.clientProperties,
+          response: { LOGIN: this.config.login, PASSWORD: this.config.password },
+        })
         return
 
-      case codec.Protocol.methods.connectionTune:
+      case methods.connectionTune:
         if (typeof args.channelMax === 'number') {
           this.setChannelMax(args.channelMax)
         }
@@ -247,40 +266,29 @@ export class Connection extends EventEmitter {
           this.serializer.setMaxFrameSize(args.frameMax)
         }
 
-        this.send(this.serializer.encode(codec.ServiceChannel, {
-          type: codec.FrameType.METHOD,
-          method: codec.Protocol.methods.connectionTuneOk,
-          args: {
-            channelMax: this.serverChannelMax,
-            frameMax: this.serializer.maxFrameSize,
-            heartbeat: this.config.heartbeat / 1000,
-          },
-        }))
+        this.sendMethod(ServiceChannel, methods.connectionTuneOk, {
+          channelMax: this.serverChannelMax,
+          frameMax: this.serializer.maxFrameSize,
+          heartbeat: this.config.heartbeat / 1000,
+        })
 
-        this.send(this.serializer.encode(codec.ServiceChannel, {
-          type: codec.FrameType.METHOD,
-          method: codec.Protocol.methods.connectionOpen,
-          args: { virtualHost: this.config.vhost },
-        }))
+        this.sendMethod(ServiceChannel, methods.connectionOpen, { 
+          virtualHost: this.config.vhost,
+        })
 
         return
 
-      case codec.Protocol.methods.connectionOpenOk:
+      case methods.connectionOpenOk:
         this.setState(CONNECTION_STATUS.READY)
         return
 
-      case codec.Protocol.methods.connectionClose:
+      case methods.connectionClose:
         this.setState(CONNECTION_STATUS.CLOSING)
-        this.send(this.serializer.encode(codec.ServiceChannel, {
-          type: codec.FrameType.METHOD,
-          method: codec.Protocol.methods.connectionCloseOk,
-          args: {},
-        }))
-
+        this.sendMethod(ServiceChannel, methods.connectionCloseOk)
         this.stream?.emit('error', new ServerCloseRequest(args.replyText, args.replyCode))
         return
 
-      case codec.Protocol.methods.connectionCloseOk:
+      case methods.connectionCloseOk:
         this.destroyStream()
         return
 
@@ -338,7 +346,7 @@ export class Connection extends EventEmitter {
   private sendHeartbeat() {
     debug('send heartbeat')
 
-    return this.send(codec.HeartbeatFrame, true)
+    return this.send(HeartbeatFrame, true)
   }
 
   // event handlers
@@ -347,7 +355,7 @@ export class Connection extends EventEmitter {
     this.stream.on('data', this.parser.execute)
 
     // and send handshake
-    stream.write(codec.HandshakeFrame)
+    stream.write(HandshakeFrame)
 
     // prepare heartbeats, do 2x time for interval
     this.timers.incomingHearbeatTimer = setInterval(this.onMissedHearbeat, this.config.heartbeat * 2)

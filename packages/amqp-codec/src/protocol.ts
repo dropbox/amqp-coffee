@@ -1,48 +1,55 @@
-import * as protocol from './amqp-definitions-0-9-1'
-export { Class, Field, FieldTypes } from './amqp-definitions-0-9-1'
+import { Classes, classes, ClassIds, ClassMethodIds, classMethodsTable, ClassMethodsTable, FieldTypes, MethodArgTypes } from './fixtures/typed-protocol'
+import { FrameType } from './constants'
 
-export interface MethodsTableMethod {
-  name: string;
-  fields: protocol.Field[];
-  methodIndex: number;
-  classIndex: number;
+export { methods, Field, MethodArgTypes } from './fixtures/typed-protocol'
+export { classes, classMethodsTable, ClassIds, FieldTypes }
+
+export type Protocol = MethodFrame
+    | ContentHeader
+    | Content
+    | Heartbeat
+
+export type MethodsTableMethod = ClassMethodsTable[keyof ClassMethodsTable]
+export type ClassTypes = Classes[keyof Classes]
+
+export type MethodFrame = {
+    type: FrameType.METHOD;
+    method: MethodsTableMethod;
+    args: MethodArgTypes[MethodsTableMethod['name']];
 }
 
-export interface MethodsTable {
-  [classIndex: number]: {
-    [methodIndex: number]: MethodsTableMethod,
-  };
+export type ContentHeader = {
+    type: FrameType.HEADER;
+    classInfo: ClassTypes;
+    weight: number;
+    properties: Record<string, unknown>;
+    size: number;
 }
 
-export interface ClassesTable {
-  [classIndex: number]: protocol.Class;
+export type Content = {
+    type: FrameType.BODY;
+    data: Buffer;
 }
 
-export interface MethodByNameTable {
-  [methodName: string]: MethodsTableMethod;
+export type Heartbeat = {
+    type: FrameType.HEARTBEAT;
 }
 
-export const methods: MethodByNameTable = Object.create(null)
-export const classes: ClassesTable = Object.create(null)
-export const methodTable: MethodsTable = Object.create(null)
+const genAssertMap = (method: Record<string | number, any>): Record<string, true> => {
+    const resp = Object.keys(method).reduce((map, id) => {
+        map[id] = true
+        return map
+    }, {} as Record<string, true>)
+    return Object.setPrototypeOf(resp, null)
+}
 
-for (const classInfo of protocol.classes) {
-  classes[classInfo.index] = classInfo
-  for (const methodInfo of classInfo.methods) {
-    // className + methodInfo.name.toCammelCase
-    const name = `${classInfo.name}${methodInfo.name[0].toUpperCase()}${methodInfo.name.slice(1)}`
-    const method = {
-      classIndex: classInfo.index,
-      fields: methodInfo.fields,
-      methodIndex: methodInfo.index,
-      name,
-    }
+const classMethodIds = genAssertMap(classMethodsTable)
+const classIds = genAssertMap(classes)
 
-    if (methodTable[method.classIndex] == null) {
-      methodTable[method.classIndex] = Object.create(null)
-    }
+export const isClassMethodId = (input: string): input is ClassMethodIds => {
+    return classMethodIds[input] === true
+}
 
-    methodTable[method.classIndex][method.methodIndex] = method
-    methods[name] = method
-  }
+export const isClassIndex = (input: number): input is ClassIds => {
+    return classIds[input] === true
 }

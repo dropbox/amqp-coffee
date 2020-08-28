@@ -1,6 +1,4 @@
-import { Class, MethodsTableMethod } from './protocol'
-
-export const kMissingFrame = 'missing end frame'
+export const kMissingFrame = new Error('missing end frame')
 export const kUnknownFrameType = 'unknown frametype'
 export const MaxFrameSize = 131072
 export const MaxEmptyFrameSize = 8
@@ -48,31 +46,3 @@ export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 
 export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END])
 export const EndFrame = Buffer.from([INDICATOR_FRAME_END])
 export const ServiceChannel = 0
-
-export type Protocol = MethodFrame
-  | ContentHeader
-  | Content
-  | Heartbeat
-
-export type MethodFrame = {
-  type: FrameType.METHOD;
-  method: MethodsTableMethod;
-  args: any;
-}
-
-export type ContentHeader = {
-  type: FrameType.HEADER;
-  classInfo: Class;
-  weight: number;
-  properties: Record<string, unknown>;
-  size: number;
-}
-
-export type Content = {
-  type: FrameType.BODY;
-  data: Buffer;
-}
-
-export type Heartbeat = {
-  type: FrameType.HEARTBEAT;
-}

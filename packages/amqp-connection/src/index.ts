@@ -1,10 +1,10 @@
 import { strict as assert } from 'assert'
+import type { MethodsTableMethod, MethodArgTypes } from '@microfleet/amqp-codec'
 import Joi = require('@hapi/joi');
 import { EventEmitter, once } from 'events'
 import os = require('os');
 import readPkgUp = require('read-pkg-up');
 import _debug = require('debug');
-// import { Serializer } from '@microfleet/amqp-codec'
 import { Connection, ConnectionConfig } from './connectors/connection'
 import { StartupNodes, ConnectionPool } from './connectors/connectionPool'
 import { shuffle } from './util'
@@ -64,19 +64,22 @@ const connectionOptions = Joi
     tls: Joi.boolean().default(false),
     tlsOptions: Joi.object().unknown(true),
     vhost: Joi.string().default('/'),
+    temporaryChannelTimeout: Joi.number().default(2000), // in ms
+    temporaryChannelTimeoutCheck: Joi.number().default(1000), // in ms
   })
   .default()
 
-class Reconnectable extends EventEmitter {
-  private readonly config: CPConfiguration;
-  private readonly startupNodes: StartupNodes;
-  private readonly connectionPool: ConnectionPool;
-  // private readonly serializer: Serializer = new Serializer();
+export class Reconnectable extends EventEmitter {
+  private readonly startupNodes: StartupNodes
+  private readonly connectionPool: ConnectionPool
   private manuallyClosing = false
   private status = ClusterStatus.Wait
-  private connecting: Promise<void> | null = null;
-  private connection: Connection | null = null;
+  private connecting: Promise<void> | null = null
+  private connection: Connection | null = null
   private pendingConnections: Map<string, Connection> = new Map()
+
+  public readonly config: CPConfiguration
+  public channelCount = 0
 
   constructor(nodes: StartupNodes, opts: Partial<CPConfiguration> = {}) {
     super()
@@ -206,6 +209,12 @@ class Reconnectable extends EventEmitter {
     }
 
     await once(this, ClusterStatus.Close)
+  }
+
+  public async sendMethod<T extends MethodsTableMethod>(channel: number, method: T, args: MethodArgTypes[T['name']]): Promise<void> {
+    // TODO: what if connection is inactive?
+    // which methods could be re-run (stateless), and which are stateful?
+    // this.connection?.sendMethod(channel, method, args)
   }
 
   /**

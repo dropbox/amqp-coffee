@@ -5,15 +5,20 @@ import {
   FrameType,
   HeartbeatFrame,
   INDICATOR_FRAME_END,
-  Protocol,
   MaxFrameSize,
   AMQPDataTypes,
+} from './constants'
+import { 
+  classes, 
+  ClassIds,
+  Field,
+  FieldTypes,
+  Protocol,
   ContentHeader,
   MethodFrame,
   Content,
   Heartbeat,
-} from './constants'
-import { classes, Field, MethodsTableMethod, FieldTypes } from './protocol'
+} from './protocol'
 
 function isFloat(value: number) {
   return value === +value && value !== (value | 0)
@@ -321,7 +326,7 @@ function serializeFieldLoose(serializer: Serializer, args: Record<string, unknow
 
 function serializeFields(
   serializer: Serializer,
-  fields: MethodsTableMethod['fields'],
+  fields: Field[],
   args: Record<string, unknown>,
   strict: boolean,
 ) {
@@ -371,7 +376,7 @@ function encodeMethod(serializer: Serializer, channel: number, data: MethodFrame
 
 function encodeHeader(serializer: Serializer, channel: number, args: ContentHeader): Buffer {
   const { buffer } = serializer
-  const classInfo = classes[60]
+  const classInfo = classes[ClassIds.basic]
 
   // start preparing the frame
   buffer[0] = FrameType.HEADER
@@ -439,7 +444,7 @@ function encodeHeader(serializer: Serializer, channel: number, args: ContentHead
 function encodeBody(serializer: Serializer, channel: number, args: Content): Buffer[] {
   const body = args.data
 
-  assert.equal(Buffer.isBuffer(body), true, 'args.data must be a buffer')
+  assert.strictEqual(Buffer.isBuffer(body), true, 'args.data must be a buffer')
 
   const { buffer, maxFrameSize } = serializer
   serializer.offset = 1
