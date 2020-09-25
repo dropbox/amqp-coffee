@@ -327,7 +327,7 @@ function serializeFieldLoose(serializer: Serializer, args: Record<string, unknow
 function serializeFields(
   serializer: Serializer,
   fields: Field[],
-  args: Record<string, unknown>,
+  args: Record<string, unknown> = Object.create(null),
   strict: boolean,
 ) {
   serializer.bitField = 0
@@ -345,7 +345,7 @@ function encodeMethod(serializer: Serializer, channel: number, data: MethodFrame
   const { method } = data
 
   // frame type
-  buffer[0] = FrameType.METHOD
+  buffer[0] = data.type
 
   // channel number
   serializeInt2(serializer, channel)

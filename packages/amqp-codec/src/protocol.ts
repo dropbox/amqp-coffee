@@ -1,8 +1,8 @@
-import { Classes, classes, ClassIds, ClassMethodIds, classMethodsTable, ClassMethodsTable, FieldTypes, MethodArgTypes } from './fixtures/typed-protocol'
+import { Classes, classes, ClassIds, ClassMethodIds, classMethodsTable, ClassMethodsTable, FieldTypes, MethodFrame } from './fixtures/typed-protocol'
 import { FrameType } from './constants'
 
-export { methods, Field, MethodArgTypes } from './fixtures/typed-protocol'
 export { classes, classMethodsTable, ClassIds, FieldTypes }
+export * from './fixtures/typed-protocol'
 
 export type Protocol = MethodFrame
     | ContentHeader
@@ -11,12 +11,6 @@ export type Protocol = MethodFrame
 
 export type MethodsTableMethod = ClassMethodsTable[keyof ClassMethodsTable]
 export type ClassTypes = Classes[keyof Classes]
-
-export type MethodFrame = {
-    type: FrameType.METHOD;
-    method: MethodsTableMethod;
-    args: MethodArgTypes[MethodsTableMethod['name']];
-}
 
 export type ContentHeader = {
     type: FrameType.HEADER;

@@ -17,7 +17,8 @@ import {
   MethodFrame,
   ContentHeader,
   Content,
-  Heartbeat
+  Heartbeat,
+  FieldTypeEquality
 } from './protocol'
 
 export interface Configuration {
@@ -162,8 +163,8 @@ function parseTable(parser: Parser): Record<string, unknown> {
   return table
 }
 
-function parseFields(parser: Parser, fields: Field[]): Record<string, unknown> {
-  const args = Object.create(null)
+function parseFields<T extends Record<Field['name'], FieldTypeEquality[Field['domain']]>>(parser: Parser, fields: Field[]): T {
+  const args: T = Object.create(null)
 
   // reset bit index
   parser.bitIndex = 0
@@ -185,9 +186,10 @@ function parseMethodFrame(parser: Parser): MethodFrame | Error {
   }
 
   const method = classMethodsTable[classMethodId]
-
   const args = parseFields(parser, method.fields)
-  return { type: FrameType.METHOD, method, args }
+
+  // NOTE: name is only used for type narrowing in the code
+  return { type: FrameType.METHOD, name: method.name, method, args } as MethodFrame
 }
 
 function parseHeaderFrame(parser: Parser): ContentHeader | Error {
@@ -201,7 +203,7 @@ function parseHeaderFrame(parser: Parser): ContentHeader | Error {
 
   const classInfo = classes[classIndex]
   const propertyFlags = parseInt2(parser)
-  const fields = []
+  const fields: Field[] = []
   for (const [i, field] of classInfo.fields.entries()) {
     if ((i + 1) % 15 === 0) {
       parseInt2(parser)

@@ -1,3 +1,5 @@
+import { FrameType } from './fixtures/typed-protocol'
+
 export const kMissingFrame = new Error('missing end frame')
 export const kUnknownFrameType = 'unknown frametype'
 export const MaxFrameSize = 131072
@@ -35,14 +37,8 @@ export type AMQPDataTypes = string
 
 export const INDICATOR_FRAME_END = 206
 
-export const enum FrameType {
-  METHOD = 1,
-  HEADER = 2,
-  BODY = 3,
-  HEARTBEAT = 8,
-}
-
 export const HandshakeFrame = Buffer.from('AMQP' + String.fromCharCode(0, 0, 9, 1))
 export const HeartbeatFrame = Buffer.from([FrameType.HEARTBEAT, 0, 0, 0, 0, 0, 0, INDICATOR_FRAME_END])
 export const EndFrame = Buffer.from([INDICATOR_FRAME_END])
 export const ServiceChannel = 0
+export { FrameType }
