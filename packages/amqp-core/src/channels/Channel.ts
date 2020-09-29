@@ -4,9 +4,20 @@
 
 import { EventEmitter } from 'events'
 import Limit from 'p-limit'
-import { methods, MethodsTableMethod } from '@microfleet/amqp-codec'
-import Connection from '@microfleet/amqp-connection'
+import { 
+    MethodFrame, 
+    MethodFrameOk, 
+    methods, 
+    classMethodsTable, 
+    isClassMethodId, 
+    MethodNames, 
+    FrameType,
+    ContentHeader
+} from '@microfleet/amqp-codec'
+import { ServerError } from '@microfleet/amqp-connection'
+import Connection, { ClusterStatus } from '@microfleet/amqp-connection'
 import _debug = require('debug')
+import { once } from 'events'
 
 const debug = _debug('amqp-core:Channel')
 
@@ -18,6 +29,31 @@ export const enum CHANNEL_STATE {
 
 type onMethodCallback = (err: Error | null, result?: unknown) => void
 
+const enum TaskType {
+    method = "method",
+    publish = "publish"
+}
+
+type okMethodFrames = MethodFrameOk['method']
+
+export type TaskMethod = {
+    type: TaskType.method;
+    method: MethodFrame;
+    okMethod?: okMethodFrames;
+    preflight?: () => boolean;
+}
+
+export type TaskPublish = {
+    type: TaskType.publish;
+    method: MethodFrame;
+    okMethod?: okMethodFrames;
+    preflight?: () => boolean;
+    data: Buffer;
+    header: Omit<ContentHeader, 'size'>;
+}
+
+export type Task = TaskMethod | TaskPublish
+
 export class Channel extends EventEmitter {
     private state = CHANNEL_STATE.Closed
     private transactional = false
@@ -28,7 +64,7 @@ export class Channel extends EventEmitter {
     private tmpChannelTimeout = this.connection.config.temporaryChannelTimeout
     private tmpChannelTimeoutCheck = this.connection.config.temporaryChannelTimeoutCheck
 
-    constructor(private connection: Connection, private channel: number) {
+    constructor(private connection: Connection, public channel: number) {
         super()
         this.open()
 
@@ -65,18 +101,24 @@ export class Channel extends EventEmitter {
 
         this.state = CHANNEL_STATE.Opening
 
-        this.waitForMethod(methods.channelOpenOk)
-        this.sendMethod(methods.channelOpen)
-        this.connection.channelCount += 1
+        await Promise.all([
+            this.waitForMethod(methods.channelOpenOk),
+            this.sendMethod({ 
+                type: FrameType.METHOD,
+                name: MethodNames.channelOpen,
+                method: methods.channelOpen,
+            })
+        ])
 
+        this.connection.channelCount += 1
         if (this.transactional) {
             this.temporaryChannel()
         }
     }
 
-    public async reset() {
+    public async reset(): Promise<void> {
         if (this.state !== CHANNEL_STATE.Open) {
-            this.callOutstandingCallbacks(new Error('Channel Opening or Reseting'))
+            this.callOutstandingCallbacks(new Error('Channel is Opening or Resetting'))
         }
         
         // if our state is closed and either we arn't a transactional channel (queue, exchange declare etc..)
@@ -92,16 +134,24 @@ export class Channel extends EventEmitter {
         }
     }
 
-//   crash: (cb)=>
-//     if !process.env.AMQP_TEST?
-//       cb?()
-//       return true
+    async crash(wait = false): Promise<boolean> {
+        if (process.env.AMQP_TEST == null) {
+            return true
+        }
 
-//     # this will crash a channel forcing a channelOpen from the server
-//     # this is really only for testing
-//     debug "Trying to crash channel"
-//     @connection._sendMethod @channel, methods.queuePurge, {queue:"idontexist"}
-//     @waitForMethod(methods.channelClose, cb) if cb?
+        // this will crash a channel forcing a channelOpen from the server
+        // this is really only for testing
+        debug('Trying to crash channel')
+        this.connection.sendMethod(this.channel, {
+            type: FrameType.METHOD,
+            method: methods.queuePurge, 
+            name: MethodNames.queuePurge,
+            args: { queue: 'idontexist' }
+        })
+
+        if (wait) await this.waitForMethod(methods.channelClose)
+        return false
+    }
 
     public close(auto = false): void {
         if (!auto) {
@@ -116,29 +166,38 @@ export class Channel extends EventEmitter {
         if (this.state === CHANNEL_STATE.Open) {
             this.connection.channelCount -= 1
             this.state = CHANNEL_STATE.Closed
-            this.sendMethod(methods.channelClose, {
-                replyText: 'Goodbye',
-                replyCode: 200,
-                classId: 0,
-                methodId: 0
+            this.sendMethod({
+                type: FrameType.METHOD,
+                method: methods.channelClose,
+                name: MethodNames.channelClose,
+                args: {
+                    replyText: 'Goodbye',
+                    replyCode: 200,
+                    classId: 0,
+                    methodId: 0
+                }
             })
         }
     }
 
-    public async sendMethod(method: MethodsTableMethod, args: unknown = {}): Promise<void> {
-        return this.connection.sendMethod(this.channel, method, args)
+    public async sendMethod(method: MethodFrame): Promise<void> {
+        return this.connection.sendMethod(this.channel, method)
     }
 
-    async waitForMethod(method: MethodsTableMethod): Promise<unknown> {
+    public async sendData(data: Buffer, header: Omit<ContentHeader, 'size'>): Promise<void> {
+        return this.connection.sendBody(this.channel, { type: FrameType.BODY, data }, header)
+    }
+
+    async waitForMethod<T>(method: MethodFrame['method']): Promise<T> {
         return new Promise((resolve, reject) => {
             this.waitingCallbacks[method.name].push((err, result) => {
                 if (err) return reject(err)
-                resolve(result)
+                resolve(result as T)
             })
         })
     }
 
-    callbackForMethod(method?: MethodsTableMethod): onMethodCallback {
+    callbackForMethod(method?: MethodFrame['method']): onMethodCallback {
         if (!method) {
             return () => true
         }
@@ -148,149 +207,168 @@ export class Channel extends EventEmitter {
             delete this.waitingCallbacks[method.name]
         }
 
-        return cb
+        return cb || (() => true)
     }
 
+    // Functions to overwrite
+    onChannelOpen(): never {
+        throw new Error('channel open called and should be overwritten')
+    }
 
-//   # Functions to overwrite
-//   _channelOpen: ()->
-//     debug 4, ()->return "channel open called and should be overwritten"
+    channelClosed(err?: Error): never {
+        throw new Error('channel closed called and should be overwritten')
+    }
 
-//   _channelClosed: ()->
-//     debug 4, ()->return "channel closed called and should be overwritten"
+    onChannelReconnect(): never {
+        throw new Error('channel reconnect called and should be overwritten')
+    }
 
-//   _onChannelReconnect: (cb)->
-//     debug 4, ()->return "channel reconnect called and should be overwritten"
-//     cb()
+    onMethod(channel: number, method: MethodFrame): never {
+        throw new Error('_onMethod MUST be overwritten by whoever extends Channel')
+    }
 
-//   _onMethod: (method, args)->
-//     debug 3, ()->return "_onMethod MUST be overwritten by whoever extends Channel"
+    // TASK QUEUEING ---------------------------------------------------------
+    async taskPush<T>(method: MethodFrame, okMethod: okMethodFrames): Promise<T | undefined> {
+        return this.limit<[TaskMethod], T | undefined>(this.taskWorker, { type: TaskType.method, method, okMethod })
+    }
 
+    async taskPushPreflight<T>(method: MethodFrame, okMethod: okMethodFrames, preflight: () => boolean): Promise<T | undefined> {
+        return this.limit<[TaskMethod], T | undefined>(this.taskWorker, { type: TaskType.method, method, okMethod, preflight })
+    }
 
-//   # TASK QUEUEING ---------------------------------------------------------
-//   taskPush: ( method, args, okMethod, cb)=> # same as queueSendMethod
-//     @queue.push {type: 'method', method, args, okMethod, cb}
+    async taskQueuePushRaw<T>(task: Task): Promise<T | undefined> {
+        return this.limit<[Task], T | undefined>(this.taskWorker, task)
+    }
 
-//   taskPushPreflight: ( method, args, okMethod, preflight, cb)=>
-//     @queue.push {type: 'method', method, args, okMethod, preflight, cb}
+    async queuePublish<T>(method: MethodFrame, data: Buffer, header: Omit<ContentHeader, 'size'>): Promise<T | undefined> {
+        return this.limit<[TaskPublish], T | undefined>(this.taskWorker, { type: TaskType.publish, method, data, header })
+    }
 
-//   taskQueuePushRaw: (task, cb)=>
-//     task.cb = cb if cb? and task?
-//     @queue.push task
+    private async taskWorker<ReturnType>(task: Task): Promise<ReturnType | undefined> {
+        if (this.transactional) {
+            this.lastChannelAccess = Date.now()
+        }
 
-//   queueSendMethod: (method, args, okMethod, cb)=>
-//     @queue.push {type: 'method', method, args, okMethod, cb}
+        const { method, okMethod, preflight } = task
 
-//   queuePublish: (method, data, options)=>
-//     @queue.push {type: 'publish', method, data, options}
+        // if preflight is false do not proceed
+        if (preflight != null && !preflight()) {
+            throw new Error('preflight check failed')
+        }
 
-//   _taskWorker: (task, done)=>
-//     if @transactional then @lastChannelAccess = Date.now()
-//     {type, method, okMethod, args, cb, data, options, preflight} = task
+        if (this.state === CHANNEL_STATE.Closed && this.connection.status === ClusterStatus.Ready) {
+            debug('Channel reassign')
+            this.connection.channelManager.channelReassign(this)
+            await this.open()
+            return this.taskWorker(task)
+        }
 
-//     doneFn = (err, res)->
-//       cb(err, res) if cb?
-//       if OVERFLOW_PROTECTION > 100
-//         OVERFLOW_PROTECTION = 0
-//         defer done
-//       else
-//         OVERFLOW_PROTECTION++
-//         done()
+        if (this.state !== CHANNEL_STATE.Open) {
+            // if our connection is closed that ok, but if its destroyed it will not reopen
+            if (this.connection.status === ClusterStatus.Close) {
+                throw new Error('Connection is destroyed')
+            }
+            
+            if (this.connection.channelManager.isChannelClosed(this.channel)) {
+                this.connection.channelManager.channelReassign(this)
+            }
 
-//     # if preflight is false do not proceed
-//     if preflight? and !preflight()
-//       return doneFn(new Error('preflight check failed'))
+            await once(this, 'open')
+            return this.taskWorker(task)
+        }
 
-//     if @state is 'closed' and @connection.state is 'open'
-//       debug 1, ()->return "Channel reassign"
-//       @connection.channelManager.channelReassign(@)
-//       @open (e, r)=>
-//         @_taskWorker(task, done)
+        // if (okMethod) await this.waitForMethod(okMethod)
+        switch (task.type) {
+            case TaskType.method: {
+                const p = this.sendMethod(method)
+                const r = okMethod ? this.waitForMethod<ReturnType>(okMethod) : undefined
+                const [res] = await Promise.all([r, p])
+                return res
+            }
 
-//     else if @state isnt 'open'
-//       # if our connection is closed that ok, but if its destroyed it will not reopen
-//       if @connection.state is 'destroyed'
-//         doneFn(new Error("Connection is destroyed"))
+            case TaskType.publish: {
+                this.sendMethod(method)
+                const p = this.sendData(task.data, task.header)
+                const r = okMethod ? this.waitForMethod<ReturnType>(okMethod) : undefined
+                const [res] = await Promise.all([r, p])
+                return res
+            }
+        }
+    }
 
-//       else
-//         if @connection.channelManager.isChannelClosed(@channel)
-//           @connection.channelManager.channelReassign(@)
-//         @once 'open', () =>
-//           @_taskWorker(task, done)
+    callOutstandingCallbacks(message: Error = new Error('Channel Unavaliable')): void {
+        const outStandingCallbacks = this.waitingCallbacks
+        this.waitingCallbacks = Object.create(null)
 
-//     else
-//       @waitForMethod(okMethod, doneFn) if okMethod?
+        for (const cbs of Object.values(outStandingCallbacks)) {
+            for (const cb of cbs.values()) {
+                cb(message)
+            }
+        }
+    }
 
-//       if type is 'method'
-//         @connection._sendMethod(@channel, method, args)
-//         doneFn() if !okMethod?
+    // incomming channel messages for us
+    onChannelMethod(channel: number, method: MethodFrame): void {
+        if (this.transactional) {
+            this.lastChannelAccess = Date.now()
+        }
 
-//       else if type is 'publish'
-//         @connection._sendMethod(@channel, method, options)
-//         @connection._sendBody @channel, data, options, (err, res)->
-//         doneFn() if !okMethod?
+        if (channel !== this.channel) {
+            debug('channel was sent to the wrong channel object', channel, this.channel)
+            return
+        }
 
-//       else
-//         throw new Error("a task was queue with an unknown type of #{type}")
+        this.callbackForMethod(method.method)(null, method.args)
 
+        switch (method.name) {
+        case MethodNames.channelCloseOk:
+            this.connection.channelManager.channelClosed(this.channel)
+            this.state = CHANNEL_STATE.Closed
 
-//   _callOutstandingCallbacks: (message)=>
-//     outStandingCallbacks = @waitingCallbacks
-//     @waitingCallbacks    = {}
+            this.channelClosed(new Error('Channel closed'))
+            this.callOutstandingCallbacks(new Error('Channel closed'))
+            break
 
-//     if !message? then message = "Channel Unavaliable"
-//     for key, cbs of outStandingCallbacks
-//       for cb in cbs
-//         cb?(message)
+        case MethodNames.channelClose: {
+            const { args } = method
+            this.connection.channelManager.channelClosed(channel)
+            debug('Channel closed by server %j', args)
+            this.state = CHANNEL_STATE.Closed
 
+            const classMethodId = `${args.classId}_${args.methodId}`
+            const err = new ServerError(args)
 
-//   # incomming channel messages for us
-//   _onChannelMethod: (channel, method, args)->
-//     if @transactional then @lastChannelAccess = Date.now()
+            if (isClassMethodId(classMethodId)) {
+                const closingMethod = `${classMethodsTable[classMethodId].name}Ok` as MethodNames
+                this.callbackForMethod(methods[closingMethod])(err)  // this would be the error
+            }
 
-//     if channel isnt @channel
-//       return debug 1, ()->return ["channel was sent to the wrong channel object", channel, @channel]
+            this.channelClosed(err)
+            this.callOutstandingCallbacks(err)
+            break
+        }
 
-//     @callbackForMethod(method)(null, args)
+        case MethodNames.channelOpenOk:
+            this.state = CHANNEL_STATE.Open
+            this.onChannelOpen()
+            this.emit('open')
+            break
 
-//     switch method
-//       when methods.channelCloseOk
-//         @connection.channelManager.channelClosed(@channel)
+        default:
+            this.onMethod(channel, method)
+        }
+    }
 
-//         @state = 'closed'
+    public connectionClosed(): void {
+        // if the connection closes, make sure we reflect that because that channel is also closed
+        if (this.state !== CHANNEL_STATE.Closed) {
+            this.state = CHANNEL_STATE.Closed
+            this.channelClosed()
+        }
 
-//         @_channelClosed(new Error("Channel closed"))
-//         @_callOutstandingCallbacks({msg: "Channel closed"})
-
-//       when methods.channelClose
-//         @connection.channelManager.channelClosed(channel)
-
-//         debug 1, ()->return "Channel closed by server #{JSON.stringify args}"
-//         @state = 'closed'
-
-//         if args.classId? and args.methodId?
-//           closingMethod = methodTable[args.classId][args.methodId].name
-//           @callbackForMethod(methods["#{closingMethod}Ok"])(args) #this would be the error
-
-//         @_channelClosed({msg: "Server closed channel", error: args})
-//         @_callOutstandingCallbacks("Channel closed by server #{JSON.stringify args}")
-
-//       when methods.channelOpenOk
-//         @state = 'open'
-//         @_channelOpen()
-//         @emit 'open'
-
-
-//       else
-//         @_onMethod( channel, method, args )
-
-//   _connectionClosed: ()->
-//     # if the connection closes, make sure we reflect that because that channel is also closed
-//     if @state isnt 'closed'
-//       @state = 'closed'
-//       @_channelClosed()
-//       if @channelTracker?
-//         clearInterval(@channelTracker)
-//         @channelTracker = null
-
+        if (this.channelTracker != null) {
+            clearInterval(this.channelTracker)
+            this.channelTracker = null
+        }
+    }
 }

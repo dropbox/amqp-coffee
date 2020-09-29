@@ -1,19 +1,15 @@
-0 silly input [ 'yarn', 'test' ]
-1 silly flags { _: [ 'exec' ],
-1 silly flags   'reject-cycles': false,
-1 silly flags   rejectCycles: false,
-1 silly flags   scope: '@microfleet/amqp-connection',
-1 silly flags   command: 'yarn',
-1 silly flags   args: [ 'test' ] }
+0 silly argv {
+0 silly argv   _: [ 'add' ],
+0 silly argv   D: true,
+0 silly argv   dev: true,
+0 silly argv   scope: '@microfleet/amqp-core',
+0 silly argv   globs: [],
+0 silly argv   lernaVersion: '3.18.1',
+0 silly argv   '$0': '/usr/local/bin/lerna',
+0 silly argv   pkg: '@types/denque'
+0 silly argv }
+1 notice cli v3.18.1
 2 verbose rootPath /Users/vitaly/projects/amqp-coffee
-3 info version 2.11.0
-4 silly existsSync /Users/vitaly/projects/amqp-coffee/VERSION
-5 info versioning independent
-6 info scope @microfleet/amqp-connection
-7 silly initialize attempt
-8 silly initialize success
-9 silly execute attempt
-10 error exec Errored while executing 'yarn test' in '@microfleet/amqp-connection'
-11 error execute callback with error
-12 error Error: Command failed: yarn test
-12 error     at Promise.all.then.arr (/Users/vitaly/.config/yarn/global/node_modules/lerna/node_modules/execa/index.js:236:11)
+3 info versioning independent
+4 error Error: 404 Not Found - GET https://registry.npmjs.org/@types%2fdenque - Not found
+4 error     at /Users/vitaly/.config/yarn/global/node_modules/@evocateur/npm-registry-fetch/check-response.js:104:15

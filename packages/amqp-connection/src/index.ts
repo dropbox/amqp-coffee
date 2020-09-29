@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert'
-import type { MethodsTableMethod, MethodArgTypes } from '@microfleet/amqp-codec'
+import type { Content, ContentHeader, MethodFrame } from '@microfleet/amqp-codec'
 import Joi = require('@hapi/joi');
 import { EventEmitter, once } from 'events'
 import os = require('os');
@@ -9,6 +9,8 @@ import { Connection, ConnectionConfig } from './connectors/connection'
 import { StartupNodes, ConnectionPool } from './connectors/connectionPool'
 import { shuffle } from './util'
 import { AggregateError } from './errors'
+
+export { ServerError, BasicReturnError } from './errors'
 
 const pkg = readPkgUp.sync({ cwd: __dirname })?.packageJson
 assert(pkg, 'pkg must be defined')
@@ -73,11 +75,11 @@ export class Reconnectable extends EventEmitter {
   private readonly startupNodes: StartupNodes
   private readonly connectionPool: ConnectionPool
   private manuallyClosing = false
-  private status = ClusterStatus.Wait
   private connecting: Promise<void> | null = null
   private connection: Connection | null = null
   private pendingConnections: Map<string, Connection> = new Map()
 
+  public status = ClusterStatus.Wait
   public readonly config: CPConfiguration
   public channelCount = 0
 
@@ -211,10 +213,16 @@ export class Reconnectable extends EventEmitter {
     await once(this, ClusterStatus.Close)
   }
 
-  public async sendMethod<T extends MethodsTableMethod>(channel: number, method: T, args: MethodArgTypes[T['name']]): Promise<void> {
+  public async sendMethod(channel: number, method: MethodFrame): Promise<void> {
     // TODO: what if connection is inactive?
     // which methods could be re-run (stateless), and which are stateful?
-    // this.connection?.sendMethod(channel, method, args)
+    this.connection?.sendMethod(channel, method)
+  }
+
+  public async sendBody(channel: number, data: Content, header: Omit<ContentHeader, 'size'>): Promise<void> {
+    // TODO: what if connection is inactive?
+    // which methods could be re-run (stateless), and which are stateful?
+    this.connection?.sendData(channel, data, header)
   }
 
   /**
@@ -231,8 +239,8 @@ export class Reconnectable extends EventEmitter {
         break
 
       case ClusterStatus.Reconnecting: {
-        const { value, done } = this.pendingConnections.entries().next()
-        if (!done && value) {
+        if (this.pendingConnections.size > 0) {
+          const { value } = this.pendingConnections.entries().next()
           const [key, connection] = value as [string, Connection]
           this.pendingConnections.delete(key)
           this.setStatus(ClusterStatus.Ready, connection)

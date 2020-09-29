@@ -5,8 +5,8 @@ import net = require('net');
 import rc = require('reconnect-core');
 import tls = require('tls');
 import { 
-  MethodsTableMethod, 
   MethodFrame, 
+  Content,
   FrameType, 
   methods, 
   Parser, 
@@ -15,7 +15,10 @@ import {
   ParsedResponse, 
   HeartbeatFrame,
   HandshakeFrame,
-  MethodArgTypes,
+  MethodFrameConnectionStart, 
+  MethodFrameConnectionTune,
+  MethodFrameConnectionClose,
+  MethodNames, ContentHeader
 } from '@microfleet/amqp-codec'
 import {
   HeartbeatError,
@@ -59,9 +62,9 @@ export interface ClientProperties {
 }
 
 export interface ServerProperties {
-  product: string;
-  version: string;
-  capabitilies: {
+  product?: string;
+  version?: string;
+  capabitilies?: {
     [capability: string]: boolean;
   };
 }
@@ -80,6 +83,7 @@ export const enum CONNECTION_STATUS {
 
 const kCloseFrame: MethodFrame = {
   type: FrameType.METHOD,
+  name: methods.connectionClose.name,
   method: methods.connectionClose,
   args: { classId: 0, methodId: 0, replyCode: 200, replyText: 'closed' },
 }
@@ -184,12 +188,15 @@ export class Connection extends EventEmitter {
     await once(this, 'closed')
   }
 
-  public sendMethod<T extends MethodsTableMethod>(channel: number, method: T, args: MethodArgTypes[T['name']]): boolean | null {
-    return this.send(this.serializer.encode(channel, {
-      type: FrameType.METHOD,
-      method: method,
-      args,
-    }))
+  public sendMethod(channel: number, data: MethodFrame): boolean | null {
+    return this.send(this.serializer.encode(channel, data))
+  }
+
+  public sendData(channel: number, body: Content, header: Omit<ContentHeader, 'size'>): void {
+    this.send(this.serializer.encode(channel, { ...header, size: body.data.length }))
+    for (const frame of this.serializer.encode(channel, body)) {
+      this.send(frame)
+    }
   }
 
   private send(data: Buffer, doNotRefresh?: boolean): boolean | null {
@@ -209,6 +216,68 @@ export class Connection extends EventEmitter {
 
     // send data
     return this.stream.write(data)
+  }
+
+  private handleConnectionStartMethod({ args }: MethodFrameConnectionStart): void {
+    if (args.versionMajor !== 0 && args.versionMinor !== 9) {
+      this.reconnectable.reconnect = false
+      this.stream?.emit('error', new ServerErrorMismatch(args))
+      return
+    }
+
+    this.setState(CONNECTION_STATUS.TUNING)
+    this.serverProperties = args.serverProperties
+    this.sendMethod(ServiceChannel, {
+      type: FrameType.METHOD,
+      name: MethodNames.connectionStartOk,
+      method: methods.connectionStartOk,
+      args: {
+        mechanism: 'AMQPLAIN',
+        locale: 'en_US',
+        clientProperties: this.config.clientProperties,
+        response: { LOGIN: this.config.login, PASSWORD: this.config.password },
+      }
+    })
+  }
+
+  private handleConnectionTune({ args }: MethodFrameConnectionTune): void {
+    if (typeof args.channelMax === 'number') {
+      this.setChannelMax(args.channelMax)
+    }
+
+    if (typeof args.frameMax === 'number') {
+      this.serializer.setMaxFrameSize(args.frameMax)
+    }
+
+    this.sendMethod(ServiceChannel, {
+      type: FrameType.METHOD,
+      name: MethodNames.connectionTuneOk,
+      method: methods.connectionTuneOk,
+      args: {
+        channelMax: this.serverChannelMax,
+        frameMax: this.serializer.maxFrameSize,
+        heartbeat: this.config.heartbeat / 1000,
+      }
+    })
+
+    this.sendMethod(ServiceChannel, {
+      type: FrameType.METHOD,
+      method: methods.connectionOpen,
+      name: MethodNames.connectionOpen,
+      args: {
+        virtualHost: this.config.vhost,
+      }
+    })
+  }
+
+  private handleConnectionClose({ args }: MethodFrameConnectionClose): void {
+    this.setState(CONNECTION_STATUS.CLOSING)
+    this.sendMethod(ServiceChannel, {
+      type: FrameType.METHOD,
+      name: MethodNames.connectionCloseOk,
+      method: methods.connectionCloseOk
+    })
+    this.stream?.emit('error', new ServerCloseRequest(args.replyText, args.replyCode))
   }
 
   /**
@@ -237,63 +306,15 @@ export class Connection extends EventEmitter {
 
     // ensure that we do not get some weird shit here
     assert(data.type === FrameType.METHOD, `invalid frame type for channel 0: ${data.type}`)
-    const { method, args } = data
 
-    switch (method) {
-      case methods.connectionStart:
-        if (args.versionMajor !== 0 && args.versionMinor !== 9) {
-          this.reconnectable.reconnect = false
-          this.stream?.emit('error', new ServerErrorMismatch(args))
-          return
-        }
-
-        this.setState(CONNECTION_STATUS.TUNING)
-        this.serverProperties = args.serverProperties
-        this.sendMethod(ServiceChannel, methods.connectionStartOk, {
-          mechanism: 'AMQPLAIN',
-          locale: 'en_US',
-          clientProperties: this.config.clientProperties,
-          response: { LOGIN: this.config.login, PASSWORD: this.config.password },
-        })
-        return
-
-      case methods.connectionTune:
-        if (typeof args.channelMax === 'number') {
-          this.setChannelMax(args.channelMax)
-        }
-
-        if (typeof args.frameMax === 'number') {
-          this.serializer.setMaxFrameSize(args.frameMax)
-        }
-
-        this.sendMethod(ServiceChannel, methods.connectionTuneOk, {
-          channelMax: this.serverChannelMax,
-          frameMax: this.serializer.maxFrameSize,
-          heartbeat: this.config.heartbeat / 1000,
-        })
-
-        this.sendMethod(ServiceChannel, methods.connectionOpen, { 
-          virtualHost: this.config.vhost,
-        })
-
-        return
-
-      case methods.connectionOpenOk:
-        this.setState(CONNECTION_STATUS.READY)
-        return
-
-      case methods.connectionClose:
-        this.setState(CONNECTION_STATUS.CLOSING)
-        this.sendMethod(ServiceChannel, methods.connectionCloseOk)
-        this.stream?.emit('error', new ServerCloseRequest(args.replyText, args.replyCode))
-        return
-
-      case methods.connectionCloseOk:
-        this.destroyStream()
-        return
-
+    switch (data.name) {
+      case MethodNames.connectionStart: return this.handleConnectionStartMethod(data)
+      case MethodNames.connectionTune: return this.handleConnectionTune(data)
+      case MethodNames.connectionOpenOk: return this.setState(CONNECTION_STATUS.READY)
+      case MethodNames.connectionClose: return this.handleConnectionClose(data)
+      case MethodNames.connectionCloseOk: return this.destroyStream()
       default:
-        throw new Error(`no matched method on connection for ${method.name}`)
+        throw new Error(`no matched method on connection for ${data.name}`)
     }
   }
 

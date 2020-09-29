@@ -441,7 +441,7 @@ function encodeHeader(serializer: Serializer, channel: number, args: ContentHead
   return headerBuffer
 }
 
-function encodeBody(serializer: Serializer, channel: number, args: Content): Buffer[] {
+function* encodeBody(serializer: Serializer, channel: number, args: Content): Generator<Buffer, void, void> {
   const body = args.data
 
   assert.strictEqual(Buffer.isBuffer(body), true, 'args.data must be a buffer')
@@ -453,7 +453,6 @@ function encodeBody(serializer: Serializer, channel: number, args: Content): Buf
   const headerLengthStart = serializer.offset
 
   let offset = 0
-  const frames = []
   while (offset < body.length) {
     const length = Math.min((body.length - offset), maxFrameSize)
     serializer.offset = headerLengthStart
@@ -465,11 +464,9 @@ function encodeBody(serializer: Serializer, channel: number, args: Content): Buf
       EndFrame,
     ], length + 8)
 
-    frames.push(frame)
     offset += length
+    yield frame
   }
-
-  return frames
 }
 
 function encodeHeartbeat(): Buffer {
@@ -502,9 +499,9 @@ export class Serializer {
     this.maxFrameSize = frameSize
   }
 
-  public encode(channel: number, data: Content): Buffer[]
+  public encode(channel: number, data: Content): Generator<Buffer, void, void>
   public encode(channel: number, data: MethodFrame | ContentHeader | Heartbeat): Buffer
-  public encode(channel: number, data: Protocol): Buffer | Buffer[]  {
+  public encode(channel: number, data: Protocol): Buffer | Generator<Buffer, void, never>  {
     switch (data.type) {
       case FrameType.METHOD: return encodeMethod(this, channel, data)
       case FrameType.HEADER: return encodeHeader(this, channel, data)
