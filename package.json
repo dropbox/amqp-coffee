@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "async": "*",
-    "bson": "~0.4.21",
+    "bson": "1.1.4",
     "debug": "*",
     "underscore": "*"
   },
